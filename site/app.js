@@ -10,14 +10,14 @@ const METODOS = {
   kquant:{nome:"K-quants", cor:"--m-kq",   forma:"estrela"},
 };
 const HIP = [
-  {id:"H1", t:"4 bits com algoritmo ciente de dados retém ≥ 95% da qualidade do bf16; RTN não.",
-   r:"RTN atinge o limiar, ou nenhum método ciente de dados (AWQ/GPTQ/DWQ) o atinge.", n:"Exige ≥ 1 modelo com todos os métodos em 4 bits e a definição final de qualidade."},
-  {id:"H2", t:"A degradação é maior em modelos menores (0,6B > 1,7B > 4B) no mesmo bit-width.",
-   r:"A ordem de degradação não se confirma.", n:"Exige pelo menos 3 tamanhos de modelo no mesmo bit-width."},
-  {id:"H3", t:"Abaixo de 4 bits (3 e 2) a queda é superlinear, e GPTQ/DWQ a reduzem em relação ao RTN.",
-   r:"A queda é linear, ou os métodos não diferem do RTN.", n:"Exige execuções em 3 e 2 bits."},
-  {id:"H4", t:"A redução de memória vira ganho de tokens/s na decodificação aproximadamente proporcional ao bit-width.",
-   r:"O ganho medido fica muito abaixo do teórico (limiar a fixar).", n:"Exige vários bit-widths; o piloto só tem 16 e 4 bits."},
+  {id:"H1", t:"Em 4 bits, algum método ciente de dados (GPTQ/AWQ/DWQ) retém ≥ 95% da qualidade do bf16 (Q ≥ 0,95) e o RTN não.",
+   r:"em ≥ 3 dos 5 modelos o RTN tem Q ≥ 0,95, ou em ≥ 3 modelos nenhum método ciente de dados atinge Q ≥ 0,95. Corroborada se o critério vale em ≥ 4 dos 5 modelos.", n:"Exige os 5 modelos com RTN, GPTQ, AWQ e DWQ em 4 bits."},
+  {id:"H2", t:"A degradação é maior em modelos menores da mesma família: Q(0,6B) < Q(1,7B) < Q(4B).",
+   r:"a ordem se confirma (com ICs sem sobreposição) em < 50% das células método × {4, 3 bits}. Corroborada com ≥ 75%.", n:"Exige os três Qwen3 em 4 e 3 bits."},
+  {id:"H3", t:"Abaixo de 4 bits a queda é superlinear, e GPTQ ou DWQ a reduzem em relação ao RTN.",
+   r:"os incrementos de L = 1 − Q (RTN) não crescem de 4→3→2 bits, ou GPTQ/DWQ não reduzem L em ≥ 20% no 3 bits em ≥ 3 modelos.", n:"Exige RTN em 4/3/2 bits e GPTQ/DWQ em 3 bits nos 5 modelos."},
+  {id:"H4", t:"A redução de memória vira ganho de tokens/s quase proporcional: E = (ganho de decode) / (redução de tamanho).",
+   r:"E < 0,4 nos modelos de 3–4B em 4 bits. Corroborada se E ≥ 0,6 nos três.", n:"Exige a fase de velocidade, rodada isolada, para SmolLM3-3B, Llama-3.2-3B e Qwen3-4B."},
 ];
 const $ = (s, r=document) => r.querySelector(s);
 const el = (tag, attrs={}, kids=[]) => {
@@ -349,6 +349,11 @@ function versoes() {
   host.append(el("span",{text:"Calibração: calibration_v5"}), el("span",{text:"Avaliação: WikiText-2 (teste), seq 2048"}));
   const datas = [...new Set(DADOS.linhas.map(r=>r.data).filter(Boolean))].sort();
   $("#meta-dados").textContent = `${DADOS.n_linhas} linhas, ${datas.join(" – ")}.`;
+  if (DADOS.fonte === "matriz") {
+    $("#aviso-titulo").textContent = "Matriz do protocolo-v1 (em andamento).";
+    $("#aviso-texto").textContent = "Uma semente por configuração (réplicas do AWQ em 4 bits estimam a variância). Resultados parciais enquanto a matriz roda; vereditos só com os dados completos.";
+    $("#nota-resultados").textContent = "Q = PPL fp / PPL quantizado (WikiText-2). K-quants: razão contra o F16 do próprio llama.cpp (janelamento diferente do MLX).";
+  }
 }
 
 function desenhar() { graficoPareto(); graficoBits(); graficoVel(); tabela(); legenda(); }

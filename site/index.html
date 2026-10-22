@@ -23,7 +23,7 @@
     <h1>Quantização pós-treino de LLMs pequenos, no dispositivo</h1>
     <p class="lede">Estudo experimental comparando RTN, GPTQ, AWQ e DWQ (mlx-lm) e K-quants (llama.cpp) em modelos de 0,6 a 4 bilhões de parâmetros, num MacBook Pro M5 Pro com 24&nbsp;GB de memória unificada.</p>
     <div class="aviso" role="note">
-      <strong>Dados de piloto.</strong> Os números abaixo vêm de <em>uma única execução</em> por configuração, só do Qwen3-0.6B em 4 bits, sem repetições nem benchmarks de tarefas. Servem para validar o pipeline, não para conclusões. <span id="meta-dados"></span>
+      <strong id="aviso-titulo">Dados de piloto.</strong> <span id="aviso-texto">Os números abaixo vêm de <em>uma única execução</em> por configuração, só do Qwen3-0.6B, sem benchmarks de tarefas. Servem para validar o pipeline, não para conclusões.</span> <span id="meta-dados"></span>
     </div>
   </section>
 
@@ -67,7 +67,7 @@
 
   <section id="resultados">
     <h2>3 · Resultados interativos</h2>
-    <p class="nota">Piloto: Qwen3-0.6B, uma execução por ponto. Diferenças pequenas podem ser ruído.</p>
+    <p class="nota" id="nota-resultados">Piloto: Qwen3-0.6B, uma execução por ponto. Diferenças pequenas podem ser ruído. K-quants: razão contra o F16 do próprio llama.cpp.</p>
     <div class="filtros" id="filtros" role="group" aria-label="Filtros">
       <fieldset><legend>Modelo</legend><div id="f-modelo" class="chips"></div></fieldset>
       <fieldset><legend>Método</legend><div id="f-metodo" class="chips"></div></fieldset>
