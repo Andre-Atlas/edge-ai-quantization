@@ -1,5 +1,5 @@
 {
-  "descricao": "Matriz completa do estudo (protocolo-v1). fp_gb = tamanho do modelo bf16, usado no guarda de memoria.",
+  "descricao": "Matriz completa do estudo (protocolo-v1). fp_gb = tamanho do modelo bf16, usado no guarda de memoria. memoria_total_gb = orcamento de GPU para jobs simultaneos (metade dos 24 GB; o resto fica para o macOS).",
   "modelos": [
     {
       "id": "Qwen/Qwen3-0.6B",
@@ -51,7 +51,7 @@
       ]
     }
   },
-  "memoria_total_gb": 20,
+  "memoria_total_gb": 12,
   "replicas": {
     "descricao": "sementes extras (so metodos com calibracao) para estimar a variancia entre sementes",
     "modelos": [

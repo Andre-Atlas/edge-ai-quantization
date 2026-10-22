@@ -1,0 +1,2 @@
+2026-10-22 13:40:20 medicao de paralelismo (3 jobs RTN 8/4/3b, Qwen3-0.6B)
+serie=234s

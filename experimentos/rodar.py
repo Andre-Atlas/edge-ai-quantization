@@ -27,7 +27,7 @@ PY = sys.executable
 CHAVE = ["modelo", "metodo", "bits", "grupo", "seed"]
 COLUNAS = ["data", "commit", *CHAVE, "tamanho_gb", "tempo_quant_s", "ppl_wikitext2", "janelas", "tokens_avaliados", "seq",
            "acc_arc_easy", "acc_arc_easy_ep", "acc_arc_challenge", "acc_arc_challenge_ep", "acc_hellaswag",
-           "acc_hellaswag_ep", "acc_piqa", "acc_piqa_ep", "acc_winogrande", "acc_winogrande_ep", "acc_media",
+           "acc_hellaswag_ep", "acc_piqa", "acc_piqa_ep", "acc_winogrande", "acc_winogrande_ep", "acc_media", "pico_memoria_ppl_gb",
            "prefill_tps", "prefill_tps_dp", "decode_tps", "decode_tps_dp", "pico_memoria_gb",
            "status", "mlx_lm", "mlx", "python"]
 
@@ -85,6 +85,8 @@ def quantizar(modelo, metodo, bits, grupo, seed, destino):
     elif metodo in ("gptq", "awq", "dwq"):
         cmd = base + [metodo, "--model", modelo, "--mlx-path", d, "--bits", str(bits),
                       "--group-size", str(grupo), "--seed", str(seed)]
+        if metodo == "dwq":
+            cmd.append("--grad-checkpoint")  # so reduz memoria (recalcula ativacoes); nao muda o resultado
     else:
         raise SystemExit(f"metodo desconhecido: {metodo}")
     t0 = datetime.datetime.now()

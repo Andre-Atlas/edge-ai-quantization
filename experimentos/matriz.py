@@ -45,7 +45,26 @@ def jobs(cfg, somente=None, metodos=None):
 
 
 def estimativa_gb(j):
-    return j["fp_gb"] * (3.0 if j["metodo"] == "dwq" else 2.2) + 1
+    """Pico estimado de memoria de GPU do job (GB).
+
+    Quantizacao com calibracao carrega o modelo bf16 (fp_gb) e ativacoes; o DWQ carrega professor
+    e aluno e treina. A avaliacao de PPL soma ~4 GB de logits (vocabulario ~150k, uma janela).
+    Estimativa conservadora de proposito: subestimar travou o Mac (22/10/2026, ver README).
+    """
+    if j["metodo"] == "dwq":
+        return j["fp_gb"] * 3 + 4
+    return j["fp_gb"] * 1.5 + 4
+
+
+def necessario_sozinho_gb(j):
+    """Memoria livre minima para iniciar o job mesmo sem outros rodando: pesos + logits + 2 GB de folga."""
+    return (j["fp_gb"] * 2 if j["metodo"] == "dwq" else j["fp_gb"]) + 4 + 2
+
+
+def memoria_livre_gb():
+    import psutil
+
+    return psutil.virtual_memory().available / 1e9
 
 
 def pendente(j, fase):
@@ -64,7 +83,7 @@ def comando(j, fase):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--fase", required=True, choices=["qualidade", "velocidade"])
-    ap.add_argument("--workers", type=int, default=1)
+    ap.add_argument("--workers", type=int, default=1, help="padrao 1; paralelo so apos medir o ganho (medir_paralelismo.sh)")
     ap.add_argument("--somente", nargs="*")
     ap.add_argument("--metodos", type=lambda s: s.split(","))
     ap.add_argument("--simular", action="store_true", help="apenas lista o que seria executado")
@@ -80,7 +99,7 @@ def main():
             print(" ", j["modelo"], j["metodo"], j["bits"], "seed", j["seed"], f"~{estimativa_gb(j):.1f} GB")
         return
     LOGS.mkdir(exist_ok=True)
-    rodando, limite = [], cfg["memoria_total_gb"]
+    rodando, limite, ultimo_aviso = [], cfg["memoria_total_gb"], 0.0
     while fila or rodando:
         for p, j, t0 in rodando[:]:
             if p.poll() is not None:
@@ -91,7 +110,18 @@ def main():
                                   "status": f"falhou:{a.fase}"})
                 print(f"[{'ok' if p.returncode == 0 else 'FALHOU'}] {ident} ({time.time() - t0:.0f}s)", flush=True)
         usado = sum(estimativa_gb(j) for _, j, _ in rodando)
-        while fila and len(rodando) < a.workers and (not rodando or usado + estimativa_gb(fila[0]) <= limite):
+        if fila and not rodando and memoria_livre_gb() < necessario_sozinho_gb(fila[0]):
+            if time.time() - ultimo_aviso > 60:
+                print(f"[aguardando memoria] {fila[0]['modelo']} {fila[0]['metodo']} precisa de "
+                      f"~{necessario_sozinho_gb(fila[0]):.0f} GB livres, ha {memoria_livre_gb():.1f} GB. "
+                      "Feche apps pesados (Teams, Outlook, Chrome...).", flush=True)
+                ultimo_aviso = time.time()
+            time.sleep(10)
+            continue
+        # alem do orcamento, so inicia outro job em paralelo se a memoria livre real comportar + 6 GB
+        # de folga para o macOS (WindowServer tambem usa a GPU)
+        while fila and len(rodando) < a.workers and (not rodando or (usado + estimativa_gb(fila[0]) <= limite
+                                                                      and memoria_livre_gb() >= estimativa_gb(fila[0]) + 6)):
             j = fila.pop(0)
             ident = rodar.identificador(j["modelo"], j["metodo"], j["bits"], j["grupo"], j["seed"])
             log = open(LOGS / f"{ident}.{a.fase}.log", "w")

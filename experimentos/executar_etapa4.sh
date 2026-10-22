@@ -6,7 +6,7 @@
 set -u
 cd "$(dirname "$0")/.."
 PY=.venv/bin/python
-W=${1:-2}
+W=${1:-1}  # serial por padrao: ver "Memoria" em experimentos/README.md
 export PATH="$HOME/.local/bin:$PATH"
 echo "== $(date) qualidade (workers=$W)"
 $PY experimentos/matriz.py --fase qualidade --workers "$W"

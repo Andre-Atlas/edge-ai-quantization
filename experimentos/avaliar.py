@@ -22,8 +22,12 @@ import numpy as np
 TAREFAS = ["arc_easy", "arc_challenge", "hellaswag", "piqa", "winogrande"]
 
 
-def nll_por_janela(model, tokenizer, seq_len=2048, batch_size=4):
-    """NLL media por token em cada janela de 2048 tokens do WikiText-2 (teste, raw)."""
+def nll_por_janela(model, tokenizer, seq_len=2048):
+    """NLL media por token em cada janela de 2048 tokens do WikiText-2 (teste, raw).
+
+    Uma janela por vez: com vocabulario de ~152k tokens, os logits em float32 de UMA janela
+    ja ocupam ~1,2 GB; em lotes de 4 passavam de 12 GB por processo e esgotavam a GPU.
+    """
     from datasets import load_dataset
 
     ds = load_dataset("Salesforce/wikitext", "wikitext-2-raw-v1", split="test")
@@ -31,12 +35,13 @@ def nll_por_janela(model, tokenizer, seq_len=2048, batch_size=4):
     n = (ids.size // seq_len) * seq_len
     blocos = ids[:n].reshape(-1, seq_len)
     por_janela = []
-    for i in range(0, blocos.shape[0], batch_size):
-        x = blocos[i : i + batch_size]
+    for i in range(blocos.shape[0]):
+        x = blocos[i : i + 1]
         logits = model(x[:, :-1]).astype(mx.float32)
         nll = mx.logsumexp(logits, axis=-1) - mx.take_along_axis(logits, x[:, 1:, None], axis=-1).squeeze(-1)
-        por_janela.extend(mx.mean(nll, axis=-1).tolist())
-        mx.eval(nll)
+        por_janela.append(mx.mean(nll).item())
+        del logits, nll
+        mx.clear_cache()
     return np.array(por_janela), seq_len - 1
 
 
@@ -47,7 +52,7 @@ def acuracias(modelo, limite=None):
         curto = Path(tmp) / "m"
         curto.symlink_to(Path(modelo).resolve()) if Path(modelo).exists() else None
         cmd = [sys.executable, "-m", "mlx_lm", "evaluate", "--model", str(curto) if curto.exists() else modelo, "--tasks", *TAREFAS,
-               "--num-shots", "0", "--no-apply-chat-template", "--output-dir", tmp]
+               "--num-shots", "0", "--no-apply-chat-template", "--batch-size", "4", "--output-dir", tmp]
         if limite:
             cmd += ["--limit", str(limite)]
         r = subprocess.run(cmd, capture_output=True, text=True)
@@ -94,18 +99,32 @@ def main():
     ap.add_argument("--nll-saida", help="salva a NLL por janela (.npy) para bootstrap")
     ap.add_argument("--limite", type=int, help="limita exemplos por tarefa (so para testes)")
     a = ap.parse_args()
+    import gc
+    import os
+
     from mlx_lm import load
+
+    # Teto por processo = pesos + 4 GB (logits de uma janela e temporarios). Acima disso o MLX
+    # libera cache em vez de pedir mais a GPU, protegendo o WindowServer e o resto do macOS.
+    pesos_gb = sum(f.stat().st_size for f in Path(a.modelo).glob("*.safetensors")) / 1e9 if Path(a.modelo).is_dir() else 8
+    limite_gb = float(os.environ.get("EAQ_LIMITE_GPU_GB", pesos_gb + 4))
+    mx.set_memory_limit(int(limite_gb * 1e9))
+    mx.set_cache_limit(int(1e9))
 
     out = {}
     media = lambda v: sum(v) / len(v)
     dp = lambda v: (sum((x - media(v)) ** 2 for x in v) / (len(v) - 1)) ** 0.5
     if a.fase == "qualidade":
         model, tok = load(a.modelo)
+        mx.reset_peak_memory()
         nll, ntok_janela = nll_por_janela(model, tok, a.seq)
         if a.nll_saida:
             np.save(a.nll_saida, nll)
-        out.update(ppl_wikitext2=math.exp(nll.mean()), janelas=len(nll), tokens_avaliados=len(nll) * ntok_janela, seq=a.seq)
-        del model
+        out.update(ppl_wikitext2=math.exp(nll.mean()), janelas=len(nll), tokens_avaliados=len(nll) * ntok_janela, seq=a.seq,
+                   pico_memoria_ppl_gb=mx.get_peak_memory() / 1e9)
+        del model, tok
+        gc.collect()
+        mx.clear_cache()  # libera a GPU antes de o lm-eval carregar outra copia do modelo
         acc = acuracias(a.modelo, a.limite)
         for t, (v, e) in acc.items():
             out[f"acc_{t}"], out[f"acc_{t}_ep"] = v, e
