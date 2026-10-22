@@ -1,0 +1,14 @@
+id,ano,tipo,veiculo,base,tema,contribuicao_central,verificacao
+shuvo2023efficient,2023,revisao,Proceedings of the IEEE,IEEE Xplore,inferencia na borda,Revisao de aceleracao de inferencia em dispositivos restritos (arquitetura/algoritmo/co-projeto HW-SW/aceleradores),Crossref
+menghani2023efficient,2023,survey,ACM Computing Surveys,ACM DL,efficient deep learning,Taxonomia de tecnicas para modelos menores/mais rapidos/melhores (compressao eficiencia de aprendizado hardware),Crossref
+dantas2024comprehensive,2024,revisao,Applied Intelligence,Springer,compressao de modelos,Revisao de poda quantizacao destilacao e outras tecnicas de compressao,Crossref
+lin2023tiny,2023,survey,IEEE Circuits and Systems Magazine,IEEE Xplore,TinyML,Panorama de TinyML e co-projeto algoritmo-sistema para microcontroladores,Crossref+arXiv
+zhu2024survey,2024,survey,TACL,MIT Press/ACL,compressao de LLMs,Survey de quantizacao poda destilacao e fatoracao para LLMs,Crossref
+gholami2022survey,2022,survey,Low-Power Computer Vision (cap.),Chapman&Hall/CRC (preprint arXiv 2021),quantizacao,Survey de metodos de quantizacao (uniforme/nao-uniforme PTQ/QAT bit-width misto),arXiv
+nagel2021white,2021,white paper,arXiv,arXiv,quantizacao,Guia pratico de PTQ e QAT para inferencia eficiente,arXiv
+frantar2023gptq,2023,metodo,ICLR 2023,arXiv,PTQ de LLMs,Quantizacao one-shot de pesos (3-4 bits) com informacao de segunda ordem,arXiv (venue a conferir)
+xiao2023smoothquant,2023,metodo,ICML 2023,arXiv,PTQ de LLMs,W8A8 migrando dificuldade de ativacoes para pesos,arXiv (venue a conferir)
+lin2024awq,2024,metodo,MLSys 2024,arXiv,PTQ de LLMs na borda,Quantizacao so-pesos guiada por ativacoes + runtime TinyChat para borda,arXiv (venue a conferir)
+dettmers2023qlora,2023,metodo,NeurIPS 2023,arXiv,fine-tuning quantizado,Fine-tuning de LLMs sobre pesos quantizados em 4 bits,arXiv (venue a conferir)
+ma2024era,2024,metodo,arXiv,arXiv,quantizacao extrema,LLMs com pesos ternarios (1.58 bit),arXiv
+lin2021mcunetv2,2021,metodo,NeurIPS 2021,arXiv,TinyML,Inferencia por patches para reduzir pico de memoria em microcontroladores,arXiv (venue a conferir)
