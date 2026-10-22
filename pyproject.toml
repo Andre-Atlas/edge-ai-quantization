@@ -1,0 +1,16 @@
+[project]
+name = "edge-ai-quantization"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "huggingface-hub>=2.2.0",
+    "lm-eval>=0.4.13",
+    "matplotlib>=3.11.2",
+    "mlx>=0.32.4",
+    "mlx-lm[train]>=0.32.2",
+    "pandas>=3.1.0",
+    "psutil>=7.2.2",
+    "torch>=2.14.1",
+    "torchao>=0.18.0",
+    "transformers>=5.20.2",
+]

@@ -4,3 +4,6 @@
 *.out
 *.synctex.gz
 pdfs/
+experimentos/modelos/
+.venv/
+__pycache__/

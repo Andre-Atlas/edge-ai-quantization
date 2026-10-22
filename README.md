@@ -9,11 +9,14 @@ literatura/
   mapeamento.md            # 13 trabalhos (2021–2024), por categoria, com status de verificação
   referencias.bib          # BibTeX
   matriz-de-sintese.csv    # matriz de síntese (ano, veículo, base, contribuição)
+  analise-dos-artigos.md   # pontos relevantes, diferenças e uso no artigo
 metodologia/
   popper.md                # falseabilidade, corroboração e aplicação ao projeto
   severino.md              # leitura, fichamento, projeto e estrutura do artigo
   estrutura-do-artigo.md   # esqueleto do artigo e perguntas em aberto
+  vertente.md              # vertente, hipóteses H1–H4, limitações
   ficha-modelo.md          # modelo de ficha de leitura
+experimentos/             # pipeline MLX: rodar.py, avaliar.py, resultados/ (ver experimentos/README.md)
 artigo/                    # rascunhos do manuscrito (vazio por enquanto)
 ```
 
