@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edge AI &amp; Quantização — painel</title>
+<meta name="description" content="Painel interativo de um estudo experimental de quantização pós-treino de LLMs pequenos num MacBook Pro M5 Pro.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topo">
+  <div class="wrap topo-in">
+    <a class="marca" href="#contexto">Edge AI &amp; Quantização</a>
+    <nav aria-label="Seções" class="nav">
+      <a href="#contexto">Contexto</a><a href="#logica">Lógica</a><a href="#resultados">Resultados</a><a href="#hipoteses">Hipóteses</a><a href="#melhorias">Melhorias</a><a href="#reproducao">Reprodução</a>
+    </nav>
+    <button id="tema" class="btn-tema" type="button" aria-label="Alternar tema">Tema: auto</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Quantização pós-treino de LLMs pequenos, no dispositivo</h1>
+    <p class="lede">Estudo experimental comparando RTN, GPTQ, AWQ e DWQ (mlx-lm) e K-quants (llama.cpp) em modelos de 0,6 a 4 bilhões de parâmetros, num MacBook Pro M5 Pro com 24&nbsp;GB de memória unificada.</p>
+    <div class="aviso" role="note">
+      <strong>Dados de piloto.</strong> Os números abaixo vêm de <em>uma única execução</em> por configuração, só do Qwen3-0.6B em 4 bits, sem repetições nem benchmarks de tarefas. Servem para validar o pipeline, não para conclusões. <span id="meta-dados"></span>
+    </div>
+  </section>
+
+  <section id="contexto">
+    <h2>1 · Contexto: IA na borda</h2>
+    <p>Rodar um modelo de linguagem no próprio aparelho (a “borda”) evita enviar dados à nuvem e funciona offline. O custo é que o aparelho tem pouco de tudo:</p>
+    <div class="grade3">
+      <article class="cartao"><h3>Memória</h3><p>Os pesos precisam caber na RAM junto com o cache de atenção. Um modelo de 4 bilhões de parâmetros em 16 bits ocupa cerca de 8&nbsp;GB; em 4 bits, cerca de 2&nbsp;GB.</p></article>
+      <article class="cartao"><h3>Banda de memória</h3><p>Ao gerar um token por vez (decodificação), o aparelho relê todos os pesos a cada passo. A velocidade tende a ser limitada pela banda, não pelo cálculo; pesos menores significam menos bytes lidos.</p></article>
+      <article class="cartao"><h3>Energia</h3><p>Bateria e calor limitam o uso contínuo. Menos bytes movidos costuma significar menos energia por token. Este estudo ainda <em>não</em> mede energia (veja Melhorias).</p></article>
+    </div>
+    <p><strong>A quantização</strong> troca os pesos de 16 bits por inteiros de poucos bits (aqui 8, 4, 3 e 2), com escala por grupo de pesos. Ganha-se memória e, potencialmente, velocidade; paga-se com perda de qualidade. A pergunta do estudo é <em>quanto</em> se perde, conforme o método, o bit-width e o tamanho do modelo.</p>
+    <p><strong>Dispositivo:</strong> MacBook Pro com Apple M5 Pro, 24&nbsp;GB de memória unificada (CPU e GPU compartilham a mesma memória), executando MLX. É um único dispositivo: velocidade e memória não se generalizam a GPUs CUDA, NPUs ou microcontroladores.</p>
+  </section>
+
+  <section id="logica">
+    <h2>2 · Lógica dos testes</h2>
+    <h3>Pipeline</h3>
+    <ol class="pipe" aria-label="Pipeline do experimento">
+      <li><b>Modelo</b><span>pesos em bf16 (referência “fp”)</span></li>
+      <li class="calib"><b>Calibração</b><span><code>calibration_v5</code>: texto público usado por AWQ, GPTQ e DWQ. RTN não usa dados.</span></li>
+      <li><b>Quantização</b><span>RTN, GPTQ, AWQ, DWQ · 8/4/3/2 bits · grupo 64</span></li>
+      <li class="aval"><b>Avaliação</b><span>WikiText-2 (<em>teste</em>) + velocidade + memória</span></li>
+    </ol>
+    <p class="nota">Calibração e avaliação usam conjuntos <strong>distintos</strong>: o algoritmo nunca vê o texto em que é medido. Sem isso, a perplexidade ficaria otimista para os métodos que usam dados.</p>
+
+    <h3>O que cada métrica mede</h3>
+    <dl class="defs">
+      <dt>Perplexidade (WikiText-2)</dt><dd>Quão “surpreso” o modelo fica com o texto de teste (janelas de 2048 tokens, sem sobreposição). Menor é melhor.</dd>
+      <dt>Razão PPL<sub>fp</sub>/PPL<sub>q</sub></dt><dd>Qualidade relativa ao próprio modelo bf16: 1,00 = sem perda; 0,90 = a perplexidade subiu cerca de 11%. É a medida de “qualidade” usada nos gráficos, com a ressalva de que a definição operacional final ainda está pendente.</dd>
+      <dt>Prefill (tokens/s)</dt><dd>Velocidade de ler o prompt (512 tokens), em paralelo; tende a ser limitada por cálculo.</dd>
+      <dt>Decode (tokens/s)</dt><dd>Velocidade de gerar (128 tokens), um por vez; tende a ser limitada pela banda de memória. Média de 5 repetições após 1 de aquecimento; as barras de erro são o desvio-padrão.</dd>
+      <dt>Pico de memória (GB)</dt><dd>Máximo de memória unificada usada pelo MLX durante a geração.</dd>
+      <dt>Tamanho (GB)</dt><dd>Tamanho do modelo em disco.</dd>
+    </dl>
+
+    <h3>Hipóteses falseáveis e critério de refutação</h3>
+    <p>Seguindo Popper, cada hipótese diz de antemão o que a refutaria. Os limiares são <strong>provisórios</strong> e serão congelados em commit datado antes da rodada final.</p>
+    <div id="hip-resumo" class="grade2"></div>
+  </section>
+
+  <section id="resultados">
+    <h2>3 · Resultados interativos</h2>
+    <p class="nota">Piloto: Qwen3-0.6B, uma execução por ponto. Diferenças pequenas podem ser ruído.</p>
+    <div class="filtros" id="filtros" role="group" aria-label="Filtros">
+      <fieldset><legend>Modelo</legend><div id="f-modelo" class="chips"></div></fieldset>
+      <fieldset><legend>Método</legend><div id="f-metodo" class="chips"></div></fieldset>
+      <fieldset><legend>Bits</legend><div id="f-bits" class="chips"></div></fieldset>
+    </div>
+
+    <div class="cartao grafico">
+      <h3>Qualidade × tamanho</h3>
+      <p class="sub">Para cada configuração, razão PPL<sub>fp</sub>/PPL<sub>q</sub> (↑ melhor) contra o tamanho em disco (← melhor). A linha tracejada é a fronteira de Pareto: configurações que ninguém supera em tamanho e qualidade ao mesmo tempo.</p>
+      <div id="leg-metodos" class="legenda"></div>
+      <div id="g-pareto" class="plot"></div>
+    </div>
+
+    <div class="cartao grafico">
+      <h3>Qualidade × bits, por método</h3>
+      <p class="sub">Razão PPL<sub>fp</sub>/PPL<sub>q</sub> conforme o número de bits. Com um só bit-width por método, aparecem só pontos.</p>
+      <div id="g-bits" class="facetas"></div>
+    </div>
+
+    <div class="cartao grafico">
+      <h3>Velocidade e memória</h3>
+      <p class="sub">Barras de erro: ±1 desvio-padrão das 5 repetições (em prefill e decode). Eixos independentes: cada medida tem seu gráfico.</p>
+      <div id="g-vel" class="facetas"></div>
+    </div>
+
+    <div class="cartao">
+      <h3>Tabela</h3>
+      <p class="sub">Clique nos cabeçalhos para ordenar. Mostra as mesmas linhas dos filtros.</p>
+      <div class="tabela-wrap"><table id="tabela"></table></div>
+      <p class="rodape"><a href="data/resultados.json">resultados.json</a> · gerado por <code>experimentos/exportar_site.py</code></p>
+    </div>
+  </section>
+
+  <section id="hipoteses">
+    <h2>4 · Hipóteses</h2>
+    <p>Veredito de cada hipótese, quando houver dados suficientes. Enquanto o piloto cobrir um só modelo e um só bit-width, nenhuma delas pode ser avaliada.</p>
+    <div id="hip-cartoes" class="grade2"></div>
+  </section>
+
+  <section id="melhorias">
+    <h2>5 · Pontos de melhoria</h2>
+    <p>O que ainda falta ou pode ampliar o estudo:</p>
+    <ul class="lista">
+      <li><b>Quantização de ativações.</b> Hoje só os pesos são quantizados. O <code>mlx_lm.benchmark</code> tem <code>--quantize-activations</code>; a ideia vem do SmoothQuant (mover a dificuldade das ativações para os pesos).</li>
+      <li><b>Formatos de ponto flutuante de micro-escala.</b> mxfp4, nvfp4 e mxfp8, via <code>--q-mode</code>, comparados aos inteiros com escala por grupo.</li>
+      <li><b>Bits mistos.</b> Predicados como <code>--quant-predicate mixed_3_4</code> mantêm camadas sensíveis em mais bits.</li>
+      <li><b>Ablação de group size e da calibração.</b> Variar o tamanho do grupo (32/64/128) e o texto de calibração (tamanho, domínio) para separar o efeito do algoritmo do efeito dos dados.</li>
+      <li><b>KV-cache e contexto longo.</b> Com contexto longo, o cache de atenção pode superar os pesos em memória; avaliar quantização do cache.</li>
+      <li><b>Cascata dinâmica + DWQ.</b> Partir de uma quantização dinâmica e refinar com destilação (DWQ).</li>
+      <li><b>Energia.</b> Medir joules por token com <code>powermetrics</code> (exige <code>sudo</code>).</li>
+      <li><b>Modelos novos.</b> Qwen3.5, Gemma 4, e os demais do núcleo (Qwen3-1.7B/4B, SmolLM3-3B, Llama-3.2-3B).</li>
+      <li><b>Mais evidência.</b> Repetições com sementes diferentes e benchmarks de tarefas (<code>lm-eval</code>), além de perplexidade.</li>
+    </ul>
+  </section>
+
+  <section id="reproducao">
+    <h2>6 · Reprodutibilidade</h2>
+    <div id="versoes" class="chips-info"></div>
+    <p>Ambiente com Python 3.14.9 gerenciado por <code>uv</code>; versões travadas em <code>uv.lock</code>.</p>
+<pre><code>uv sync
+uv run python experimentos/rodar.py --modelo Qwen/Qwen3-0.6B --metodo fp
+uv run python experimentos/rodar.py --modelo Qwen/Qwen3-0.6B --metodo rtn  --bits 4
+uv run python experimentos/rodar.py --modelo Qwen/Qwen3-0.6B --metodo gptq --bits 4
+uv run python experimentos/rodar.py --modelo Qwen/Qwen3-0.6B --metodo awq  --bits 4
+uv run python experimentos/rodar.py --modelo Qwen/Qwen3-0.6B --metodo dwq  --bits 4
+.venv/bin/python experimentos/exportar_site.py   # atualiza este painel</code></pre>
+    <p>Cada execução acrescenta uma linha a <code>experimentos/resultados/resultados.csv</code>. O código e os dados estão no repositório <a href="https://github.com/Andre-Atlas/edge-ai-quantization">Andre-Atlas/edge-ai-quantization</a>.</p>
+  </section>
+</main>
+
+<div id="dica" class="dica" role="status" hidden></div>
+<footer class="wrap rodape-final">Painel estático, sem build. Gráficos em SVG puro.</footer>
+<script src="app.js"></script>
+</body>
+</html>

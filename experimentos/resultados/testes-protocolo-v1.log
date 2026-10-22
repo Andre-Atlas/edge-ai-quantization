@@ -1,0 +1,10 @@
+PASSOU determinismo: RTN 4b: 24.3302 vs 24.3302
+PASSOU monotonicidade: 21.04 <= 24.33 <= 62.26 <= 748573.14
+PASSOU 8 bits ~ FP (<=1%): 21.040 vs fp 20.967
+PASSOU tamanho 8b (+-10% do teorico): 0.645 GB vs 0.640 GB
+PASSOU tamanho 4b (+-10% do teorico): 0.347 GB vs 0.339 GB
+PASSOU tamanho 3b (+-10% do teorico): 0.272 GB vs 0.263 GB
+PASSOU tamanho 2b (+-10% do teorico): 0.198 GB vs 0.188 GB
+PASSOU lm-eval (fumaca): acc=0.57, 0.42, 0.47, 0.57, 0.57
+
+TODOS OS TESTES PASSARAM

@@ -1,0 +1,72 @@
+{
+  "descricao": "Matriz completa do estudo (protocolo-v1). fp_gb = tamanho do modelo bf16, usado no guarda de memoria.",
+  "modelos": [
+    {
+      "id": "Qwen/Qwen3-0.6B",
+      "fp_gb": 1.2
+    },
+    {
+      "id": "Qwen/Qwen3-1.7B",
+      "fp_gb": 4.1
+    },
+    {
+      "id": "HuggingFaceTB/SmolLM3-3B",
+      "fp_gb": 6.2
+    },
+    {
+      "id": "meta-llama/Llama-3.2-3B",
+      "fp_gb": 6.4
+    },
+    {
+      "id": "Qwen/Qwen3-4B",
+      "fp_gb": 8.1
+    }
+  ],
+  "bits": [
+    8,
+    4,
+    3,
+    2
+  ],
+  "grupo": 64,
+  "metodos": {
+    "rtn": {
+      "seeds": [
+        0
+      ]
+    },
+    "gptq": {
+      "seeds": [
+        0
+      ]
+    },
+    "awq": {
+      "seeds": [
+        0
+      ]
+    },
+    "dwq": {
+      "seeds": [
+        0
+      ]
+    }
+  },
+  "memoria_total_gb": 20,
+  "replicas": {
+    "descricao": "sementes extras (so metodos com calibracao) para estimar a variancia entre sementes",
+    "modelos": [
+      "Qwen/Qwen3-0.6B",
+      "Qwen/Qwen3-1.7B"
+    ],
+    "bits": [
+      4
+    ],
+    "seeds": [
+      1,
+      2
+    ],
+    "metodos": [
+      "awq"
+    ]
+  }
+}

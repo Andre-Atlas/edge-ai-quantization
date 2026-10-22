@@ -7,3 +7,7 @@ pdfs/
 experimentos/modelos/
 .venv/
 __pycache__/
+experimentos/logs/
+experimentos/ferramentas/
+experimentos/resultados/*.lock
+.claude/

@@ -3,7 +3,7 @@
 **Estudo experimental comparativo de quantização pós-treino (PTQ) de pequenos LLMs (0,6–4B) em um dispositivo de borda real: MacBook Pro Apple M5 Pro, 24 GB de memória unificada.** Eixos: qualidade × memória × velocidade, de 8 a 2 bits.
 
 ## Lacuna
-Os trabalhos mapeados (GPTQ, AWQ, SmoothQuant etc.) foram avaliados sobretudo em GPUs CUDA. Comparações lado a lado dos mesmos algoritmos em hardware de borda com memória unificada são raras no corpus levantado. *(A afirmação vale para o corpus de 13 trabalhos; a 2ª rodada bibliográfica deve confirmá-la antes de aparecer no texto.)*
+A rodada 2 da literatura (#14–#27) encontrou avaliações de **desempenho e de sistema** de LLMs em Apple Silicon (ex.: Benazir et al., 2026, ACM SIGMETRICS PER; preprints de 2025–2026), então não se pode dizer que "não há avaliações". A lacuna reformulada é: **avaliações comparativas de algoritmos de PTQ (RTN, GPTQ, AWQ, DWQ, K-quants) lado a lado, com qualidade e eficiência medidas juntas, no mesmo dispositivo de memória unificada e em LLMs pequenos (≤ 4B), ainda são escassas.** A afirmação se baseia em resumos e deve ser confirmada na leitura completa (ver `literatura/analise-dos-artigos.md`).
 
 ## Hipóteses falseáveis (Popper)
 Limiares **provisórios**; devem ser congelados em commit datado **antes** da rodada final.
