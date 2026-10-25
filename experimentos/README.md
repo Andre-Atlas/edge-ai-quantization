@@ -50,3 +50,10 @@ Cada execução acrescenta uma linha em `resultados/resultados.csv` e apaga o mo
 - `matriz.py`: **serial por padrão** (`--workers 1`); estimativa conservadora (pesos × 1,5 + 4 GB; DWQ pesos × 3 + 4 GB); orçamento de 12 GB; e **não inicia nenhum job sem memória livre real suficiente** (pesos + 6 GB), esperando e avisando no log em vez de arriscar travar.
 
 **Recomendação de uso:** rodar a matriz com o Mac ocioso (fechar Teams, Outlook, Chrome), sobretudo para SmolLM3-3B, Llama-3.2-3B e Qwen3-4B. A fase de velocidade já exige máquina ociosa de qualquer forma. Paralelismo na mesma GPU não compensa o risco nesta máquina.
+
+## Documentação da execução da etapa 4 (atualizada em 25/10/2026)
+
+- `metodologia/caderno-de-laboratorio.md` — cronologia completa (cada passo, motivo, evidência), registro de decisões, incidentes e correções de curso, e-mails de aviso.
+- `experimentos/LOGICA-QUANTIZACAO.md` — lógica do código: alterações em `rodar.py`, `matriz.py`, `matriz.json`, `analise.py`; ferramentas novas (`gptq_camada.py`, `awq_liberar.py`, `dwq_sublote.py`, `testar_hessiana.py`, `medir_pico_quant.py`, `perfil_awq.py`, `comparar_gptq.py`, `analise_h3_nll.py`); fórmulas do guarda de memória; validações de equivalência; checksums SHA-256.
+- `experimentos/resultados/backups/` — cópias do CSV e dos arquivos de configuração antes de cada alteração de dados.
+- Regra do projeto: **todo passo novo (execução, alteração de código ou de dados, decisão) é registrado no caderno e, se mudar a lógica, em `LOGICA-QUANTIZACAO.md`**.
