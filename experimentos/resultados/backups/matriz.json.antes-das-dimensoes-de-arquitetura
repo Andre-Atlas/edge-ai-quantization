@@ -1,0 +1,109 @@
+{
+  "descricao": "Matriz completa do estudo (protocolo-v1). fp_gb = tamanho do modelo bf16, usado no guarda de memoria. memoria_total_gb = orcamento de GPU para jobs simultaneos (metade dos 24 GB; o resto fica para o macOS).",
+  "modelos": [
+    {
+      "id": "Qwen/Qwen3-0.6B",
+      "fp_gb": 1.2
+    },
+    {
+      "id": "Qwen/Qwen3-1.7B",
+      "fp_gb": 4.1
+    },
+    {
+      "id": "HuggingFaceTB/SmolLM3-3B",
+      "fp_gb": 6.2
+    },
+    {
+      "id": "meta-llama/Llama-3.2-3B",
+      "fp_gb": 6.4
+    },
+    {
+      "id": "Qwen/Qwen3-4B",
+      "fp_gb": 8.1
+    }
+  ],
+  "bits": [
+    8,
+    4,
+    3,
+    2
+  ],
+  "grupo": 64,
+  "metodos": {
+    "rtn": {
+      "seeds": [
+        0
+      ]
+    },
+    "gptq": {
+      "seeds": [
+        0
+      ]
+    },
+    "awq": {
+      "seeds": [
+        0
+      ]
+    },
+    "dwq": {
+      "seeds": [
+        0
+      ]
+    }
+  },
+  "memoria_total_gb": 12,
+  "excluir": [
+    {
+      "metodo": "gptq",
+      "bits": 3,
+      "motivo": "mlx-lm 0.32.2: AssertionError 'Unsupported bits 3' (gptq so aceita 2, 4 e 8 bits)"
+    },
+    {
+      "modelo": "HuggingFaceTB/SmolLM3-3B",
+      "metodo": "awq",
+      "motivo": "mlx-lm 0.32.2: NotImplementedError 'AWQ support for smollm3 models NYI'"
+    },
+    {
+      "modelo": "Qwen/Qwen3-4B",
+      "metodo": "gptq",
+      "motivo": "memoria: pico medido no Qwen3-1.7B = 3,6x fp_gb (14,7 GB); no 4B passaria de 25,8 GB (medir_pico_quant.py, 24/10/2026)"
+    },
+    {
+      "modelo": "Qwen/Qwen3-4B",
+      "metodo": "awq",
+      "motivo": "memoria: pico medido no Qwen3-1.7B = 5,9x fp_gb (24,2 GB, 7,6 GB de swap); no 4B nao cabe nos 25,8 GB"
+    },
+    {
+      "modelo": "Qwen/Qwen3-4B",
+      "metodo": "dwq",
+      "motivo": "memoria: no Qwen3-1.7B foi abortado pela trava de seguranca (memoria livre < 1,5 GB, pico > 9,6 GB e subindo)"
+    },
+    {
+      "modelo": "meta-llama/Llama-3.2-3B",
+      "metodo": "awq",
+      "motivo": "memoria (extrapolado, nao medido neste modelo): AWQ usou 5,9x o tamanho bf16 no Qwen3-1.7B (24,2 GB); no Llama (6,4 GB) passaria de 25,8 GB. Decisao de 25/10/2026"
+    },
+    {
+      "modelo": "meta-llama/Llama-3.2-3B",
+      "metodo": "dwq",
+      "motivo": "memoria (extrapolado, nao medido neste modelo): DWQ foi abortado no Qwen3-1.7B (> 9,6 GB e subindo); no Llama nao cabe nos 25,8 GB. Decisao de 25/10/2026"
+    }
+  ],
+  "replicas": {
+    "descricao": "sementes extras (so metodos com calibracao) para estimar a variancia entre sementes",
+    "modelos": [
+      "Qwen/Qwen3-0.6B",
+      "Qwen/Qwen3-1.7B"
+    ],
+    "bits": [
+      4
+    ],
+    "seeds": [
+      1,
+      2
+    ],
+    "metodos": [
+      "awq"
+    ]
+  }
+}
