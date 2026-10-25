@@ -13,7 +13,9 @@ import datetime
 import fcntl
 import importlib.metadata as md
 import json
+import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -74,6 +76,14 @@ def existe(linha_chave, coluna, csv_path=CSV):
     return any(tuple(r.get(k, "") for k in CHAVE) == ch and r.get(coluna, "") != "" for r in csv.DictReader(open(csv_path)))
 
 
+def gptq_camada():
+    return os.environ.get("EAQ_GPTQ_CAMADA") == "1"
+
+
+def awq_liberar():
+    return os.environ.get("EAQ_AWQ_LIBERAR") == "1"
+
+
 def quantizar(modelo, metodo, bits, grupo, seed, destino):
     base = [PY, "-m", "mlx_lm"]
     d = str(destino)
@@ -82,6 +92,16 @@ def quantizar(modelo, metodo, bits, grupo, seed, destino):
     elif metodo == "rtn":
         cmd = base + ["convert", "--hf-path", modelo, "--mlx-path", d, "-q", "--q-bits", str(bits),
                       "--q-group-size", str(grupo), "--dtype", "bfloat16"]
+    elif metodo == "gptq" and gptq_camada():
+        # mesma quantizacao do mlx-lm (704/704 tensores identicos em Qwen3-0,6B e 1,7B), Hessiana bf16 como no padrao,
+        # mas uma camada por vez (pico 3-4x menor). Ativado por EAQ_GPTQ_CAMADA=1; ver protocolo-v2.
+        cmd = [PY, str(RAIZ / "gptq_camada.py"), "--model", modelo, "--mlx-path", d, "--bits", str(bits),
+               "--group-size", str(grupo), "--seed", str(seed), "--hessiana", "bf16"]
+    elif metodo == "awq" and awq_liberar():
+        # mesmo AWQ do mlx-lm (704/704 tensores identicos e NLL identica em Qwen3-0,6B e 1,7B), mas liberando a memoria ao fim de
+        # cada bloco (pico 3x menor). Ativado por EAQ_AWQ_LIBERAR=1 ou --awq-liberar; ver protocolo-v2.
+        cmd = [PY, str(RAIZ / "awq_liberar.py"), "--model", modelo, "--mlx-path", d, "--bits", str(bits),
+               "--group-size", str(grupo), "--seed", str(seed)]
     elif metodo in ("gptq", "awq", "dwq"):
         cmd = base + [metodo, "--model", modelo, "--mlx-path", d, "--bits", str(bits),
                       "--group-size", str(grupo), "--seed", str(seed)]
@@ -90,7 +110,20 @@ def quantizar(modelo, metodo, bits, grupo, seed, destino):
     else:
         raise SystemExit(f"metodo desconhecido: {metodo}")
     t0 = datetime.datetime.now()
-    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL)
+    # /usr/bin/time -l mede o pico real de memoria da quantizacao (peak memory footprint, inclui a GPU/Metal); a saida de
+    # erro do job (barras de progresso) continua indo ao log em tempo real. Serve para validar matriz.estimativa_gb.
+    p = subprocess.Popen(["/usr/bin/time", "-l", *cmd], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    fim = b""
+    while chunk := p.stderr.read1(65536):
+        sys.stderr.buffer.write(chunk)
+        sys.stderr.buffer.flush()
+        fim = (fim + chunk)[-8192:]
+    rc = p.wait()
+    m = re.search(rb"(\d+)\s+peak memory footprint", fim)
+    if m:
+        print(f"[pico_quant] {metodo} {modelo} {bits}b: footprint {int(m.group(1)) / 1e9:.2f} GB", file=sys.stderr, flush=True)
+    if rc:
+        raise subprocess.CalledProcessError(rc, cmd)
     return (datetime.datetime.now() - t0).total_seconds()
 
 
@@ -127,7 +160,15 @@ def main():
     ap.add_argument("--limite", type=int, help="limita exemplos por tarefa (so testes)")
     ap.add_argument("--refazer", action="store_true", help="ignora resultados ja gravados")
     ap.add_argument("--apagar", action="store_true", help="apaga o modelo quantizado no fim")
+    ap.add_argument("--gptq-camada", action="store_true",
+                    help="GPTQ pelo gptq_camada.py (identico ao mlx-lm, bem menos memoria); equivale a EAQ_GPTQ_CAMADA=1")
+    ap.add_argument("--awq-liberar", action="store_true",
+                    help="AWQ pelo awq_liberar.py (identico ao mlx-lm, memoria liberada por bloco); equivale a EAQ_AWQ_LIBERAR=1")
     a = ap.parse_args()
+    if a.gptq_camada:
+        os.environ["EAQ_GPTQ_CAMADA"] = "1"
+    if a.awq_liberar:
+        os.environ["EAQ_AWQ_LIBERAR"] = "1"
 
     bits = 16 if a.metodo == "fp" else a.bits
     grupo = "" if a.metodo == "fp" else a.grupo
@@ -137,6 +178,10 @@ def main():
     destino = MODELOS / ident
     base = dict(data=datetime.date.today().isoformat(), commit=commit(), **chave,
                 mlx_lm=md.version("mlx-lm"), mlx=md.version("mlx"), python=platform.python_version())
+    if a.metodo == "gptq" and gptq_camada():
+        base["impl"] = "gptq_camada.py (Hessiana bf16, identico ao mlx-lm)"   # coluna extra: rastreia a implementacao usada
+    if a.metodo == "awq" and awq_liberar():
+        base["impl"] = "awq_liberar.py (gc por bloco, identico ao mlx-lm)"
 
     if a.fase in ("quantizar", "qualidade", "tudo") and not (destino / "config.json").exists():
         MODELOS.mkdir(exist_ok=True)
