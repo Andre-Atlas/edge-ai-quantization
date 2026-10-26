@@ -21,3 +21,8 @@ sleep $ESPERA_S
 $PY experimentos/preparar_rodada2_velocidade.py zerar >> $LOG 2>&1
 zsh experimentos/rodar_velocidade.sh 0
 echo "== $(date) [velocidade-r2] fim da rodada 2 (app fechado)" >> $LOG
+# job do launchd e de uso unico: remove o plist e se descarrega (nao roda de novo no proximo login)
+if [[ -f ~/Library/LaunchAgents/com.edgeai.velocidade-r2.plist ]]; then
+  rm -f ~/Library/LaunchAgents/com.edgeai.velocidade-r2.plist
+  launchctl bootout gui/$(id -u)/com.edgeai.velocidade-r2 2>/dev/null
+fi
