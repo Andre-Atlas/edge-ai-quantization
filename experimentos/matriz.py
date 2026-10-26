@@ -194,6 +194,10 @@ def main():
         return
     LOGS.mkdir(exist_ok=True)
     rodando, limite, ultimo_aviso = [], cfg["memoria_total_gb"], 0.0
+    # Fase de velocidade: nao carrega logits nem calibracao; precisa so dos pesos do modelo (fp ou quantizado) + 2,5 GB de folga.
+    # (A regra da qualidade exigia 12,8 GB livres para o Qwen3-4B fp, sem necessidade; caderno, Fase 17.)
+    peso_gb = lambda j: j["fp_gb"] if j["metodo"] == "fp" else j["fp_gb"] * (j["bits"] + 0.5) / 16
+    necessario = (lambda j: peso_gb(j) + 2.5) if a.fase == "velocidade" else necessario_sozinho_gb
     while fila or rodando:
         for p, j, t0 in rodando[:]:
             if p.poll() is not None:
@@ -207,10 +211,10 @@ def main():
                                   "status": f"falhou:{a.fase}"})
                 print(f"[{'ok' if p.returncode == 0 else 'FALHOU'}] {ident} ({time.time() - t0:.0f}s)", flush=True)
         usado = sum(estimativa_gb(j) for _, j, _ in rodando)
-        if fila and not rodando and memoria_livre_gb() < necessario_sozinho_gb(fila[0]):
+        if fila and not rodando and memoria_livre_gb() < necessario(fila[0]):
             if time.time() - ultimo_aviso > 60:
                 print(f"[aguardando memoria] {fila[0]['modelo']} {fila[0]['metodo']} precisa de "
-                      f"~{necessario_sozinho_gb(fila[0]):.0f} GB livres, ha {memoria_livre_gb():.1f} GB. "
+                      f"~{necessario(fila[0]):.0f} GB livres, ha {memoria_livre_gb():.1f} GB. "
                       "Feche apps pesados (Teams, Outlook, Chrome...).", flush=True)
                 ultimo_aviso = time.time()
             time.sleep(10)

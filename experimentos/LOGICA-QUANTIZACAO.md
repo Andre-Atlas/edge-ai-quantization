@@ -54,6 +54,7 @@
 | M3 | Guarda de memória recalibrado (`estimativa_gb`, `necessario_sozinho_gb`, `pico_fp_rtn_gb`, `hessianas_gb`, `pico_gptq_awq_gb`, `usa_camada`, `pico_gptq_camada_gb`, `memoria_total_gb`) | Fórmulas na §4.2 | A estimativa antiga (`fp_gb × 1,5 + 4`) estava **alta demais para fp/rtn** (a fila ficou ~4,5 h parada esperando 14,1 GB livres num Mac com 12,6 GB, sendo que o pico medido do maior job era 10,5 GB) e **baixa demais para GPTQ e AWQ** (14,7 e 24,2 GB medidos contra 10,1 GB estimados no Qwen3-1,7B) |
 | M4 | `comando()` acrescenta `--gptq-camada` quando `usa_camada(j)` e `--awq-liberar` para todo AWQ | A matriz escolhe sozinha a implementação alternativa | Sem isso, remover a exclusão do GPTQ do Qwen3-4B faria a matriz rodar a implementação padrão (estimativa de 57 GB) |
 | M5 | Fase de velocidade: fila = qualidade válida (`acc_media` preenchida, status sem `falhou`) e modelo em disco; falha de velocidade grava `erro_velocidade` e **não toca o `status`** | Exclui os 5 jobs inválidos por NaN e os 8 sem qualidade (59 jobs); a falha de uma medida de velocidade não pode invalidar a linha de qualidade | Antes gravava `status = falhou:velocidade` na linha de qualidade válida |
+| M6 | Fase de velocidade: limiar de memória para iniciar = peso do modelo (fp ou `fp_gb × (bits + 0,5)/16`) + 2,5 GB | A velocidade não carrega logits nem calibração; usar a regra da qualidade (12,8 GB para o Qwen3-4B fp) a travaria sem necessidade | Antes reutilizava `necessario_sozinho_gb` da qualidade |
 
 ### 2.3 `experimentos/matriz.json`
 
@@ -246,7 +247,7 @@ Compara dois diretórios de modelo tensor a tensor (pesos empacotados `uint32`, 
 6. A fase de velocidade (H4) não foi iniciada; K-quants concluídos para os cinco modelos.
 7. ~~`protocolo-v2` rascunho; `protocolo.md` modificado~~ — resolvido em 25/10: v2 vigente (tag `protocolo-v2`), `protocolo.md` idêntico à tag `protocolo-v1`, `analise.py` aplicando a v2.
 
-## 8. Checksums SHA-256 do código e do protocolo no commit de 26/10/2026 10:39 (12 primeiros caracteres)
+## 8. Checksums SHA-256 do código e do protocolo no commit de 26/10/2026 10:40 (12 primeiros caracteres)
 
 Os documentos (caderno, processo, READMEs, este arquivo) não entram porque mudam a cada atualização; para eles vale o histórico do git. Compare com `shasum -a 256 <arquivo>`. Versões anteriores de `analise.py` e `matriz.py` estão em `resultados/backups/`.
 
@@ -261,12 +262,12 @@ Os documentos (caderno, processo, READMEs, este arquivo) não entram porque muda
 | `experimentos/comparar_gptq.py` | 62 | `01d1c97ae066` |
 | `experimentos/analise_h3_nll.py` | 147 | `54bd8aa132f5` |
 | `experimentos/analise.py` | 233 | `8ede24fecad3` |
-| `experimentos/matriz.py` | 232 | `2e358f056c2d` |
+| `experimentos/matriz.py` | 236 | `69bc98ebef76` |
 | `experimentos/rodar.py` | 226 | `9ae89a953765` |
 | `experimentos/matriz.json` | 98 | `b87866b9f463` |
 | `experimentos/kquant_velocidade.py` | 80 | `4cb2e79614d8` |
 | `experimentos/resumo_contaminacao.py` | 36 | `e1b5cff664d2` |
-| `experimentos/rodar_velocidade.sh` | 100 | `b2cd09ef5e27` |
+| `experimentos/rodar_velocidade.sh` | 100 | `e42fe78b8a2c` |
 | `experimentos/vigiar_espera.sh` | 41 | `e63eacee9573` |
 | `experimentos/agendar_awq_restantes.sh` | 33 | `46461e07dec4` |
 | `experimentos/continuar_lista.sh` | 22 | `fd4ac6263d7c` |
@@ -282,6 +283,7 @@ Backups (`experimentos/resultados/backups/`):
 - `matriz.json.antes-de-reabilitar-awq-llama` — `e41248fe20eb`
 - `matriz.py.antes-da-formula-awq-v2` — `2027cef07d83`
 - `matriz.py.antes-da-formula-awq-v3` — `e8c7c464122c`
+- `resultados.csv.antes-da-velocidade-20261026-1039` — `c42cf9ed23f1`
 - `resultados.csv.antes-de-invalidar-gptq-llama-qwen4b` — `f7a976b37047`
 - `resultados.csv.antes-de-invalidar-gptq-smollm3` — `4670be8bab76`
 - `resultados.csv.em-25-10-17h` — `7a2c36b5344f`

@@ -1,7 +1,7 @@
 #!/bin/zsh
 # Fase de velocidade (H4) da etapa 4, com a maquina ociosa: 59 jobs MLX (qualidade valida) + K-quants (llama-bench).
 #  1) backup do resultados.csv; 2) espera ESPERA_S para o usuario fechar os apps e sair; 3) pre-voo: espera ate nao haver
-#  job pesado, memoria livre >= 14 GB e carga baixa por 2 min (registra no log as condicoes: apps abertos, memoria, bateria);
+#  job pesado, memoria livre >= 10 GB e carga baixa por 2 min (registra no log as condicoes: apps abertos, memoria, bateria);
 #  4) matriz.py --fase velocidade; 5) kquant_velocidade.py; 6) checagem de integridade das colunas de qualidade contra o
 #  backup. Tudo no experimentos/logs/etapa4.log com o prefixo [velocidade].
 #   caffeinate -i -s zsh experimentos/rodar_velocidade.sh [espera_em_segundos=300]
@@ -22,7 +22,7 @@ while (( $(date +%s) - ini < 7200 )); do
   pesado=$(pgrep -f "rodar.py|mlx_lm|avaliar.py|kquant.py|llama-|gptq_camada|awq_liberar|dwq_sublote|medir_pico|testar_hessiana" | wc -l | tr -d ' ')
   livre=$($PY -c "import psutil;print(int(psutil.virtual_memory().available/1e9))" 2>/dev/null)
   carga=$(sysctl -n vm.loadavg | awk '{print $2}')
-  if (( pesado == 0 )) && (( livre >= 14 )) && (( $(echo "$carga < 2.0" | bc) )); then ok=$((ok+1)); else ok=0; fi
+  if (( pesado == 0 )) && (( livre >= 10 )) && (( $(echo "$carga < 2.0" | bc) )); then ok=$((ok+1)); else ok=0; fi
   (( ok >= 2 )) && break
   sleep 60
 done
