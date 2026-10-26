@@ -102,6 +102,13 @@
 7. **Documentos do projeto:** `metodologia/processo.md` reescrito (visão geral, linha do tempo real com commits e fases, o que cada etapa constitui, feito e falta por etapa); `README.md` da raiz atualizado (mapa da documentação, estado das etapas, estrutura); este caderno e `LOGICA-QUANTIZACAO.md` atualizados.
 8. **Commits** separados por tema, em ordem lógica (pipeline → ferramentas → protocolo e análise → dados → documentação), com a tag `protocolo-v2`; push para `origin/main`. O `resultados.csv` é uma fotografia do momento do commit: o AWQ do Llama estava em execução e grava no mesmo arquivo.
 
+### Fase 15 — AWQ dos modelos grandes, correção do `analise.py` e da fórmula de memória (25/10, ~17h–22h)
+1. **AWQ 4 bits com `awq_liberar.py`** (agendado 16:45): **Llama-3.2-3B** válido (63 min; PPL 8,180; Q 0,955, IC 0,954–0,957; RTN 0,932; footprint 13,37 GB) e **Qwen3-4B** válido (78 min; PPL 14,662; Q 0,932, IC 0,928–0,935; **abaixo do RTN, 0,942**; footprint 13,18 GB). Primeiros métodos com calibração válidos nos modelos grandes (o GPTQ dava NaN). Fonte: `logs/etapa4.log`, linhas `[conferencia]`.
+2. **Erro de código encontrado (Assistente):** o `analise.py` tratava o GPTQ do Qwen3-4B, que já tinha rodado e saído NaN, como *pendente*, e por isso H1 ficava "aguardando dados" para sempre. Um job executado e inválido é um resultado definitivo de falha, não um dado que pode chegar. **Correção:** `carregar()` registra em `INVALIDOS` os jobs com status `falhou:invalido-*`, e `pendente()` não os considera pendentes. Testado com os dados reais e com dois casos sintéticos. **Efeito:** H1 passa de "aguardando dados" para **inconclusiva** (critério atendido em 2 dos 4 modelos contados: Qwen3-1,7B e Llama; Qwen3-0,6B e Qwen3-4B definitivamente não). H3 não muda (inconclusiva sem o SmolLM3, refutada com ele). **Autorizado pelo usuário** por alterar um veredito. Cópia anterior: `resultados/backups/analise.py.antes-da-correcao-invalidos`.
+3. **Fórmula de memória do AWQ refeita.** Com o Llama (13,37 GB) a fórmula anterior (`4,0 + 1,4 × fp_gb`, prevista 13,0) subestimou em 0,37 GB, e o Qwen3-4B (13,18 GB) mostrou que o footprint **não cresce com `fp_gb`**. Ajuste nos quatro pontos medidos: um termo em `fp_gb` sai com coeficiente ≈ 0 (−0,11), e o modelo de **um único termo**, o tamanho das entradas guardadas de um bloco (`input_feat` = 128 × 512 tokens × 2 B × (3d + o_in + 2d + i)), explica tudo com resíduo máximo de 0,10 GB: **footprint = 0,5 + 3,66 × input_feat + 0,3 GB** (margem para nunca subestimar). Previsto contra medido: 5,71 × 5,43 · 9,64 × 9,30 · 13,57 × 13,37 · 13,57 × 13,18 (folga mínima 0,2 GB). Quatro pontos para dois parâmetros: sobram dois graus de liberdade, mas é pouco; a 3B e 4B a regra foi validada só nos dois modelos medidos. Cópia anterior: `resultados/backups/matriz.py.antes-da-formula-awq-v2`.
+4. **Execução:** `agendar_awq_restantes.sh` (22:10): AWQ 3, 2 e 8 bits do Llama e depois do Qwen3-4B, em série, sozinhos na máquina (6 jobs, ~1 h cada). Conferência de NaN ao fim de cada um.
+5. **Estado em 22:06:** nada rodando antes do passo 4; máquina com 12,8 GB livres, swap 1,4 GB, bateria 100%.
+
 ## 1A. Raciocínio por trás de cada ação
 
 > Para cada ação: **por que** foi feita, e qual **alternativa** foi descartada e por quê. O raciocínio é o que foi apresentado ao usuário **no momento** da ação (conversa da sessão), não uma justificativa reconstruída depois; onde houve reconstrução, está marcado *(reconstruído)*. Princípios que se repetem: (P1) **não mudar o método depois de ver resultados** (pré-registro, Popper); (P2) **segurança da máquina antes de completar uma medição** (incidente de 22/10); (P3) **preservar o dado bruto** e excluir da análise só por regra explícita; (P4) **medir antes de decidir** quando a decisão depende de um número; (P5) **decisões que mudam o estudo são do usuário**; o Assistente propõe, com alternativas.
@@ -227,6 +234,16 @@
 | Commits separados por tema e em ordem lógica | Cada commit conta uma parte da história (o que mudou e por quê) e pode ser revisto ou revertido sozinho | Um commit único |
 | Grupo na barra lateral em vez de "filha" | Não existe operação para vincular uma conversa existente como filha | — |
 
+### Fase 15 — AWQ dos modelos grandes e correções
+| Ação | Por quê | Alternativa descartada |
+|---|---|---|
+| Pedir autorização antes de corrigir o `analise.py` | A correção muda um veredito (H1: aguardando → inconclusiva); decisões que mudam o estudo são do usuário (P5) | Corrigir e informar depois |
+| Tratar "executado e inválido" como resultado definitivo | O job já rodou: esperar por ele seria esperar para sempre. O dado bruto continua no CSV (P3) | Reexecutar o GPTQ do 4B |
+| Refazer a fórmula com um termo de arquitetura em vez de ajustar uma reta em `fp_gb` | A reta errou o Llama (+1,28 GB) e o Qwen3-4B (−0,97 GB); o termo físico (entradas de um bloco) dá resíduo de 0,10 GB com menos parâmetros | Aumentar a margem da reta |
+| Margem de 0,3 GB | A regra existe para nunca subestimar (P2); 0,3 cobre o maior resíduo positivo (0,10) com folga | Margem zero |
+| Rodar 3 e 2 bits antes de 8 bits | A curva qualidade × bits e a análise de superlinearidade precisam de 4, 3 e 2; 8 bits é o menos informativo | Ordem da matriz (8, 3, 2) |
+| Um job falho não interrompe os seguintes | Uma falha pontual (por exemplo, NaN) não deve parar horas de fila (P3) | Parar no primeiro erro |
+
 ## 2. Registro de decisões
 
 | # | Data | Decisão | Quem | Alternativas consideradas | Efeito |
@@ -249,6 +266,7 @@
 | D16 | 25/10 | AWQ com liberação por bloco e buscar outras melhorias | Usuário | — | `awq_liberar.py` validado |
 | D17 | 25/10 | Documentar cada passo e a lógica alterada | Usuário | — | Este caderno e `LOGICA-QUANTIZACAO.md` |
 | D18 | 25/10 | Push direto na `main`; painel mantido com o piloto; `protocolo.md` restaurado à v1 e tag `protocolo-v2`; sessões agrupadas | Usuário | branch + PR; publicar dados parciais; v2 como rascunho; só renomear | Fase 14 |
+| D19 | 25/10 | Corrigir o `analise.py` (invalidados não são pendentes) e a fórmula de memória do AWQ; rodar os AWQ de 3, 2 e 8 bits do Llama e do Qwen3-4B | Usuário | só relatar; esperar o resultado do 4B para recalibrar | H1 provisória passa a inconclusiva; seis jobs em execução |
 
 **Decisões de implementação do Assistente (sem escolha do usuário):** fator 1,4 do pico do MLX ao footprint; teto de partida = metade da RAM; estimativa `2,1 × fp_gb + 0,5` do GPTQ camada a camada; `awq_liberar` sempre ativo na matriz; remoção de entradas de `excluir` quando a alternativa foi validada; marcação de linhas NaN como inválidas (mesma regra que o usuário aprovou para o SmolLM3). Todas estão em `LOGICA-QUANTIZACAO.md` com o motivo.
 
@@ -281,6 +299,8 @@ A ordem dos e-mails 1 e 2 na noite de 24/10 não foi registrada com horário.
 | E11 | 25/10 | `protocolo.md` (v1) foi editado após a tag (+10 linhas) | **Resolvido (25/10):** conteúdo consolidado na v2 (conferido item a item) e `protocolo.md` restaurado byte a byte ao da tag `protocolo-v1` |
 | E12 | 25/10 | Texto do log do `continuar_lista.sh` cita o pid do Llama em vez do script anterior | Cosmético; a ordem de execução está correta |
 | E13 | 25/10 | Backups feitos em pasta temporária | Copiados para `experimentos/resultados/backups/` (com SHA-256) |
+| E14 | 25/10 | `analise.py` tratava job executado e inválido (NaN) como pendente: H1 "aguardando dados" indefinidamente | Corrigido com autorização do usuário (Fase 15); mudou o veredito provisório da H1 |
+| E15 | 25/10 | Fórmula de memória do AWQ (ajuste linear em `fp_gb`) subestimou o Llama em 0,37 GB | Refeita com termo de arquitetura (Fase 15); a regra "nunca subestimar" volta a valer nos 4 pontos |
 
 ## 5. Estado dos dados em 25/10/2026, ~17h
 
@@ -289,7 +309,7 @@ A ordem dos e-mails 1 e 2 na noite de 24/10 não foi registrada com horário.
 
 ## 6. Pendências
 
-1. AWQ do Llama e do Qwen3-4B (em execução); depois 8, 3 e 2 bits se o resultado de 4 bits for válido.
+1. AWQ 3, 2 e 8 bits do Llama e do Qwen3-4B (6 jobs em execução desde 22:10 de 25/10; os de 4 bits já estão válidos).
 2. DWQ: repetir o diagnóstico até salvar o modelo, com o cache do MLX limitado; comparar a qualidade com o DWQ padrão.
 3. Fase de velocidade (H4), com a máquina ociosa; simular antes (`matriz.py --fase velocidade --simular`), porque uma falha de velocidade grava `falhou:velocidade` na linha de qualidade válida e a análise a descartaria.
 4. Repetir o tempo do `Qwen3-0,6B-fp` (8 h 53) para confirmar a hipótese do swap (script não agendado).

@@ -65,6 +65,7 @@
 - **H1:** "algum método ciente de dados" = os disponíveis em 4 bits por modelo (antes exigia os três). `rtn_ok` conta sempre; `nenhum` só é definitivo quando todos os métodos possíveis estão presentes. Veredito antecipado: `refutada` se `rtn_ok ≥ 3` ou `nenhum ≥ 3`; `corroborada` se `sucesso ≥ 4`; `aguardando dados` só se há dado pendente que poderia mudar o veredito; senão `inconclusiva`. **Limiares absolutos da v1 mantidos.**
 - **H2:** células = RTN × {4, 3 bits} nos três Qwen3; GPTQ/AWQ/DWQ só em 0,6B e 1,7B ficam como suplementar.
 - **H3:** 1ª metade (incrementos de L = 1 − Q do RTN, modelos com RTN completo); 2ª metade (melhor entre GPTQ e DWQ disponíveis em 3 bits contra o RTN, ≥ 20% de redução); contagem de "sem redução" ≥ 3 refuta cedo.
+- **Jobs executados e inválidos** (status `falhou:invalido-*`, p.ex. GPTQ com NaN): registrados em `INVALIDOS` por `carregar()`; `pendente()` não os trata como pendentes (correção de 25/10, caderno E14). Sem isso a H1 ficava "aguardando dados" para sempre.
 - **Sensibilidade:** `main()` calcula H1 e H3 também com o SmolLM3 contado e imprime/grava (`sensibilidade_com_caso_separado`).
 - Saída JSON rotulada `protocolo-v2`.
 - Original preservado em `resultados/backups/analise.py.protocolo-v1` (e no git, `HEAD`).
@@ -203,7 +204,7 @@ Compara dois diretórios de modelo tensor a tensor (pesos empacotados `uint32`, 
 - **fp / rtn:** `pico = max(fp_gb + 0,5; tamanho + 2,7)`, com `tamanho = fp_gb` (fp) ou `fp_gb × (bits + 0,5)/16` (rtn). Base: 24 linhas medidas — pico da perplexidade = tamanho do modelo + 1,9 a 2,7 GB; conversão ≤ tamanho bf16 (0,6B e 1,7B). `estimativa = pico + 1,5`; `inicia com pico + 2`.
 - **GPTQ padrão:** `pesos + 1,5 × H + 1,5 GB` (MLX), com `H = 4 × n × (5d² + o_in² + i²)/10⁹`; footprint = MLX × 1,4. Ajustado em 0,6B e 1,7B. **Extrapolação a modelos grandes superestima** (Llama: previsto 40,2 GB, medido 26,06 GB).
 - **GPTQ camada a camada** (`usa_camada`: pico padrão > RAM): `2,1 × fp_gb + 0,5` (previsto 17,5 GB no Qwen3-4B; medido 17,90).
-- **AWQ** (sempre `awq_liberar`): `4,0 + 1,4 × fp_gb` (cobre 5,43 e 9,30 GB medidos). Extrapolação (Llama ≈ 13,0; Qwen3-4B ≈ 15,3 GB) **não validada**.
+- **AWQ** (sempre `awq_liberar`): `footprint = 0,5 + 3,66 × input_feat + 0,3 GB`, com `input_feat = 128 × 512 × 2 B × (3d + o_in + 2d + i)` (entradas guardadas de um bloco). Medido: 5,43 / 9,30 / 13,37 / 13,18 GB (Qwen3-0,6B, 1,7B, Llama-3.2-3B, Qwen3-4B); previsto 5,71 / 9,64 / 13,57 / 13,57 GB; resíduos do ajuste ≤ 0,10 GB; margem de 0,3 GB. A fórmula anterior (`4,0 + 1,4 × fp_gb`) subestimou o Llama em 0,37 GB e foi substituída em 25/10.
 - **DWQ: não calibrado** (só limites inferiores): mantém `fp_gb × 3 + 4`.
 - **Limiar de partida** (GPTQ/AWQ): `min(estimativa + 2; 0,5 × RAM total)` (12,9 GB). Jobs maiores que a RAM rodam sozinhos com swap (SmolLM3 GPTQ, AWQ 1,7B), sem travar.
 
@@ -235,9 +236,9 @@ Compara dois diretórios de modelo tensor a tensor (pesos empacotados `uint32`, 
 6. A fase de velocidade (H4) não foi iniciada; K-quants concluídos para os cinco modelos.
 7. ~~`protocolo-v2` rascunho; `protocolo.md` modificado~~ — resolvido em 25/10: v2 vigente (tag `protocolo-v2`), `protocolo.md` idêntico à tag `protocolo-v1`, `analise.py` aplicando a v2.
 
-## 8. Checksums SHA-256 do código e do protocolo no commit de 25/10/2026 (12 primeiros caracteres)
+## 8. Checksums SHA-256 do código e do protocolo no commit de 25/10/2026 22:11 (12 primeiros caracteres)
 
-Calculados imediatamente antes dos commits de 25/10/2026; os documentos (caderno, processo, READMEs, este arquivo) não entram porque mudam a cada atualização — para eles vale o histórico do git. Compare com `shasum -a 256 <arquivo>`.
+Os documentos (caderno, processo, READMEs, este arquivo) não entram porque mudam a cada atualização; para eles vale o histórico do git. Compare com `shasum -a 256 <arquivo>`. Versões anteriores de `analise.py` e `matriz.py` estão em `resultados/backups/`.
 
 | Arquivo | Linhas | SHA-256 |
 |---|---|---|
@@ -249,14 +250,15 @@ Calculados imediatamente antes dos commits de 25/10/2026; os documentos (caderno
 | `experimentos/perfil_awq.py` | 71 | `44c325ae0176` |
 | `experimentos/comparar_gptq.py` | 62 | `01d1c97ae066` |
 | `experimentos/analise_h3_nll.py` | 147 | `54bd8aa132f5` |
-| `experimentos/analise.py` | 224 | `2430b3c82212` |
-| `experimentos/matriz.py` | 217 | `2027cef07d83` |
+| `experimentos/analise.py` | 233 | `8ede24fecad3` |
+| `experimentos/matriz.py` | 222 | `e8c7c464122c` |
 | `experimentos/rodar.py` | 208 | `0d17f54ca69f` |
 | `experimentos/matriz.json` | 98 | `b87866b9f463` |
 | `experimentos/vigiar_espera.sh` | 41 | `e63eacee9573` |
 | `experimentos/agendar_llama_gptq.sh` | 20 | `c260655f9555` |
 | `experimentos/agendar_qwen4b_gptq.sh` | 29 | `135d56597bd6` |
 | `experimentos/agendar_awq_grandes.sh` | 29 | `6eec9c2ba26a` |
+| `experimentos/agendar_awq_restantes.sh` | 33 | `46461e07dec4` |
 | `experimentos/testar_dwq_alvos.sh` | 28 | `0cafb6222018` |
 | `experimentos/continuar_lista.sh` | 22 | `fd4ac6263d7c` |
 | `experimentos/rodar_diagnosticos.sh` | 40 | `b471a0aca0e7` |
@@ -266,9 +268,11 @@ Calculados imediatamente antes dos commits de 25/10/2026; os documentos (caderno
 
 Backups (`experimentos/resultados/backups/`):
 
+- `analise.py.antes-da-correcao-invalidos` — `2430b3c82212`
 - `analise.py.protocolo-v1` — `7245741450eb`
 - `matriz.json.antes-das-dimensoes-de-arquitetura` — `3166ac2897f2`
 - `matriz.json.antes-de-reabilitar-awq-llama` — `e41248fe20eb`
+- `matriz.py.antes-da-formula-awq-v2` — `2027cef07d83`
 - `resultados.csv.antes-de-invalidar-gptq-llama-qwen4b` — `f7a976b37047`
 - `resultados.csv.antes-de-invalidar-gptq-smollm3` — `4670be8bab76`
 - `resultados.csv.em-25-10-17h` — `7a2c36b5344f`

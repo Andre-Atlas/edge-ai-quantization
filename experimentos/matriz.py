@@ -102,10 +102,15 @@ def pico_gptq_awq_gb(j):
         h = hessianas_gb(j["arq"]) if j.get("arq") else 3.5 * j["fp_gb"]
         mlx = j["fp_gb"] + 1.5 * h + 1.5
     else:
-        # AWQ rodado SEMPRE pelo awq_liberar.py (identico ao mlx-lm; a matriz passa --awq-liberar): footprint medido de 5,43 GB
-        # no Qwen3-0,6B e 9,30 GB no 1,7B (padrao: 15,6 e ~24+ GB). 4,0 + 1,4 x fp_gb cobre os dois pontos (5,7 e 9,7 GB).
-        # Extrapolacao a 3B e 4B (Llama ~13 GB, Qwen3-4B ~15 GB): nao validada; confrontar com o [pico_quant] do primeiro job.
-        return 4.0 + 1.4 * j["fp_gb"]
+        # AWQ rodado SEMPRE pelo awq_liberar.py (identico ao mlx-lm; a matriz passa --awq-liberar). O pico e dominado pelas
+        # entradas que o AWQ guarda de UM bloco (128 amostras x 512 tokens, bf16): footprint = 0,5 + 3,66 x input_feat + 0,3 GB.
+        # Medido: 5,43 / 9,30 / 13,37 / 13,18 GB (Qwen3-0,6B, 1,7B, Llama-3.2-3B, Qwen3-4B); residuos do ajuste <= 0,10 GB; a margem
+        # de 0,3 GB cobre os quatro. (A formula anterior, 4,0 + 1,4 x fp_gb, subestimou o Llama em 0,37 GB.)
+        if j.get("arq"):
+            a = j["arq"]
+            feat = 128 * 512 * 2 * (3 * a["d"] + a["o_in"] + 2 * a["d"] + a["i"]) / 1e9
+            return 0.5 + 3.66 * feat + 0.3
+        return 4.0 + 1.6 * j["fp_gb"]          # sem dimensoes de arquitetura: aproximacao conservadora
     return mlx * 1.4
 
 

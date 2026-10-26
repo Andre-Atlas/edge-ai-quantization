@@ -38,8 +38,15 @@ def ident(r):
     return base if r["metodo"] == "fp" else f"{base}-{r['bits']}b-g{r['grupo']}-s{r['seed']}"
 
 
+INVALIDOS = set()   # (modelo, metodo, bits, seed) de jobs JA EXECUTADOS e invalidos (status falhou:invalido-*): nao sao "pendentes"
+
+
 def carregar():
-    linhas = [r for r in csv.DictReader(open(CSV)) if r.get("ppl_wikitext2") and not r.get("status", "").startswith("falhou")]
+    todas = list(csv.DictReader(open(CSV)))
+    INVALIDOS.clear()
+    INVALIDOS.update((r["modelo"], r["metodo"], int(r["bits"]), r["seed"]) for r in todas
+                     if r.get("status", "").startswith("falhou:invalido"))
+    linhas = [r for r in todas if r.get("ppl_wikitext2") and not r.get("status", "").startswith("falhou")]
     fp = {r["modelo"]: r for r in linhas if r["metodo"] == "fp"}
     for r in linhas:
         r["bits"] = int(r["bits"])
@@ -74,8 +81,10 @@ CFG = json.load(open(RAIZ / "matriz.json"))
 
 
 def pendente(L, m, metodo, bits):
-    """Dado ainda possivel: ausente do CSV valido e a combinacao nao esta em `excluir` (protocolo-v2, secao 3)."""
-    return pega(L, m, metodo, bits) is None and not excluido(CFG, dict(modelo=m, metodo=metodo, bits=bits))
+    """Dado ainda possivel: ausente do CSV valido, fora de `excluir` (protocolo-v2, secao 3) e NAO executado-e-invalido
+    (um job que ja rodou e saiu com NaN e um resultado definitivo de falha, nao um dado que ainda pode chegar)."""
+    return (pega(L, m, metodo, bits) is None and (m, metodo, bits, "0") not in INVALIDOS
+            and not excluido(CFG, dict(modelo=m, metodo=metodo, bits=bits)))
 
 
 def h1(L, modelos=CONTADOS):

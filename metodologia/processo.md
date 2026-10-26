@@ -79,9 +79,10 @@
 
 ### Etapa 4 — 🟡 (em execução)
 - Feito: qualidade de **51 dos 72 jobs** da grade v2 válidos (Qwen3-0,6B e 1,7B completos, com réplicas de AWQ; SmolLM3, Llama e Qwen3-4B com FP e RTN completos); 5 jobs inválidos por NaN (GPTQ do SmolLM3 8/4/2, do Llama 4 e do Qwen3-4B 4); 17 combinações excluídas da grade da v1 (protocolo-v2, seção 3); causa do NaN demonstrada; medições de memória; ferramentas e diagnósticos documentados em `LOGICA-QUANTIZACAO.md`.
-- Em execução (25/10, 16:45): AWQ a 4 bits do Llama-3.2-3B e do Qwen3-4B.
+- AWQ a 4 bits do Llama-3.2-3B (Q 0,955, válido) e do Qwen3-4B (Q 0,932, abaixo do RTN, válido) concluídos em 25/10.
+- Em execução (25/10, 22:10): AWQ 3, 2 e 8 bits do Llama e do Qwen3-4B (6 jobs, em série).
 - Falta:
-  1. AWQ 8/3/2 bits do Llama e do Qwen3-4B (se o de 4 bits for válido).
+  1. ~~AWQ 8/3/2 bits do Llama e do Qwen3-4B~~ — em execução desde 25/10 22:10.
   2. GPTQ 8 e 2 bits do Llama e do Qwen3-4B (o de 4 bits deu NaN; os de 8 e 2 provavelmente também, pela mesma causa: confirmar ou registrar).
   3. DWQ do SmolLM3 (caso à parte; não cabe com a implementação padrão) e a variante com alvos pré-calculados (protocolo-v2, 7 D), que ainda não fecha (20 GB de footprint no 0,6B).
   4. Linhas antigas de falha do Llama (erro 401, antes da aprovação da Meta): são sobrescritas quando os jobs rodarem.
@@ -90,7 +91,7 @@
   7. Desligar o agendamento `launchd` (`com.edgeai.etapa4`), que continua carregado e tenta disparar todo dia à meia-noite (um marcador impede a repetição).
 
 ### Etapa 5 — 🟡
-- Feito: `analise.py` com os critérios da v1 (22/10) e as regras da v2 (25/10), sensibilidade ao SmolLM3, testes sintéticos dos ramos; `analise_h3_nll.py` (análise secundária). Vereditos **provisórios** (25/10, ~17h, sem gravar `hipoteses.json`): H1 aguardando (AWQ do Llama e do 4B); H2 inconclusiva (1 de 2 células); H3 inconclusiva sem o SmolLM3 e refutada com ele; H4 aguardando a velocidade.
+- Feito: `analise.py` com os critérios da v1 (22/10) e as regras da v2 (25/10), sensibilidade ao SmolLM3, testes sintéticos dos ramos; `analise_h3_nll.py` (análise secundária). Vereditos **provisórios** (25/10, ~17h, sem gravar `hipoteses.json`): H1 **inconclusiva** (critério atendido em 2 dos 4 modelos contados: Qwen3-1,7B e Llama; depois da correção que trata o job inválido como definitivo); H2 inconclusiva (1 de 2 células); H3 inconclusiva sem o SmolLM3 e refutada com ele; H4 aguardando a velocidade.
 - Falta (lacunas apontadas em 22/10 e ainda abertas): (a) a acurácia (métrica secundária `Q_acc`) não entra nos vereditos nem como checagem de concordância; (b) as réplicas de AWQ não entram na análise (variância entre sementes calculada só no caderno); (c) o bootstrap mede só a incerteza do texto de avaliação, não a da calibração. Gerar `hipoteses.json` final quando a etapa 4 fechar.
 
 ### Etapa 6 — 🟡
