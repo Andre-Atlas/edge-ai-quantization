@@ -34,7 +34,7 @@ echo "== $(date) [velocidade] pre-voo: $cond | carga $(sysctl -n vm.loadavg) | $
 
 # ---- controle de contaminacao (o app Claude fica aberto por decisao do usuario) ----
 # Mede a MESMA configuracao (Qwen3-0,6B RTN 4 bits) 3 vezes antes e 3 depois da fase (sem gravar no CSV) e amostra, a cada
-# 30 s, o CPU do app Claude e o total do sistema. A deriva entre os controles e o CPU do app permitem avaliar o efeito dele.
+# 30 s, o CPU do app Claude (so processos de /Applications/Claude.app/: o caminho do ambiente tambem contem "Claude"; ver caderno, E19) e o total do sistema. A deriva entre os controles e o CPU do app permitem avaliar o efeito dele.
 CTRL=experimentos/modelos/Qwen3-0.6B-rtn-4b-g64-s0
 controle() {  # controle <rotulo>
   for i in 1 2 3; do
@@ -47,7 +47,7 @@ controle antes
 AMOSTRAS=experimentos/logs/velocidade-amostras.log
 : > $AMOSTRAS
 ( while true; do
-    claude=$(ps -axo %cpu,comm | grep -i "Claude" | grep -v grep | awk '{s+=$1} END{printf "%.1f", s+0}')
+    claude=$(ps -axo %cpu,comm | grep "/Applications/Claude.app/" | grep -v grep | awk '{s+=$1} END{printf "%.1f", s+0}')
     total=$(ps -A -o %cpu | awk 'NR>1{s+=$1} END{printf "%.1f", s+0}')
     echo "$(date +%H:%M:%S) claude_cpu=$claude total_cpu=$total" >> $AMOSTRAS
     sleep 30
