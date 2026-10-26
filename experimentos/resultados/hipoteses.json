@@ -1,0 +1,440 @@
+{
+ "protocolo": "protocolo-v2",
+ "n_configuracoes": 59,
+ "hipoteses": {
+  "H1": {
+   "veredito": "inconclusiva",
+   "resumo": "criterio atendido em 2; RTN >= 0,95 em 0; nenhum ciente >= 0,95 em 2; nao avaliaveis: []; pendentes: []",
+   "evidencia": {
+    "Qwen/Qwen3-0.6B": {
+     "rtn": {
+      "metodo": "rtn",
+      "bits": 4,
+      "Q": 0.8618,
+      "ic95": [
+       0.85736,
+       0.86599
+      ]
+     },
+     "melhor_ciente": {
+      "metodo": "gptq",
+      "bits": 4,
+      "Q": 0.9155,
+      "ic95": [
+       0.91233,
+       0.91864
+      ]
+     },
+     "cientes_pendentes": []
+    },
+    "Qwen/Qwen3-1.7B": {
+     "rtn": {
+      "metodo": "rtn",
+      "bits": 4,
+      "Q": 0.8555,
+      "ic95": [
+       0.84499,
+       0.86576
+      ]
+     },
+     "melhor_ciente": {
+      "metodo": "awq",
+      "bits": 4,
+      "Q": 0.9702,
+      "ic95": [
+       0.96593,
+       0.97454
+      ]
+     },
+     "cientes_pendentes": []
+    },
+    "meta-llama/Llama-3.2-3B": {
+     "rtn": {
+      "metodo": "rtn",
+      "bits": 4,
+      "Q": 0.9316,
+      "ic95": [
+       0.92932,
+       0.93382
+      ]
+     },
+     "melhor_ciente": {
+      "metodo": "awq",
+      "bits": 4,
+      "Q": 0.9554,
+      "ic95": [
+       0.95377,
+       0.95714
+      ]
+     },
+     "cientes_pendentes": []
+    },
+    "Qwen/Qwen3-4B": {
+     "rtn": {
+      "metodo": "rtn",
+      "bits": 4,
+      "Q": 0.9418,
+      "ic95": [
+       0.93717,
+       0.94646
+      ]
+     },
+     "melhor_ciente": {
+      "metodo": "awq",
+      "bits": 4,
+      "Q": 0.9317,
+      "ic95": [
+       0.92804,
+       0.93548
+      ]
+     },
+     "cientes_pendentes": []
+    }
+   }
+  },
+  "H2": {
+   "veredito": "inconclusiva",
+   "resumo": "ordem 0,6B < 1,7B < 4B confirmada em 1/2 celulas do RTN (50%); GPTQ/AWQ/DWQ so como suplementar",
+   "evidencia": {
+    "rtn-4b": {
+     "Q": [
+      0.8618,
+      0.8555,
+      0.9418
+     ],
+     "ordem_confirmada": false
+    },
+    "rtn-3b": {
+     "Q": [
+      0.3368,
+      0.4079,
+      0.6523
+     ],
+     "ordem_confirmada": true
+    },
+    "suplementar_0.6B_menor_1.7B": {
+     "gptq-4b": false,
+     "awq-4b": true,
+     "awq-3b": true,
+     "dwq-4b": true,
+     "dwq-3b": true
+    }
+   }
+  },
+  "H3": {
+   "veredito": "inconclusiva",
+   "resumo": "incrementos medios de L (RTN, 4 modelos): 4->3 0.3886, 3->2 0.5082; reducao >=20% em 3b em 2, sem reducao em 0; nao avaliaveis: ['meta-llama/Llama-3.2-3B', 'Qwen/Qwen3-4B']; pendentes: []",
+   "evidencia": {
+    "Qwen/Qwen3-0.6B": {
+     "L3_rtn": 0.6632,
+     "L3_melhor_gptq_dwq": 0.4572,
+     "reduz_20pct": true,
+     "pendentes": []
+    },
+    "Qwen/Qwen3-1.7B": {
+     "L3_rtn": 0.5921,
+     "L3_melhor_gptq_dwq": 0.3562,
+     "reduz_20pct": true,
+     "pendentes": []
+    }
+   }
+  },
+  "H4": {
+   "veredito": "corroborada",
+   "resumo": "E media por modelo: 0.83, 0.85, 0.87 (interpretacao: limiar vale para os 3 modelos)",
+   "evidencia": {
+    "HuggingFaceTB/SmolLM3-3B": {
+     "E_por_metodo": {
+      "rtn": 0.829
+     },
+     "E_media": 0.829
+    },
+    "meta-llama/Llama-3.2-3B": {
+     "E_por_metodo": {
+      "rtn": 0.83,
+      "awq": 0.878
+     },
+     "E_media": 0.854
+    },
+    "Qwen/Qwen3-4B": {
+     "E_por_metodo": {
+      "rtn": 0.872,
+      "awq": 0.874
+     },
+     "E_media": 0.873
+    }
+   }
+  }
+ },
+ "sensibilidade_com_caso_separado": {
+  "H1": {
+   "veredito": "aguardando dados",
+   "resumo": "criterio atendido em 2; RTN >= 0,95 em 0; nenhum ciente >= 0,95 em 2; nao avaliaveis: []; pendentes: ['HuggingFaceTB/SmolLM3-3B']"
+  },
+  "H3": {
+   "veredito": "refutada",
+   "resumo": "incrementos medios de L (RTN, 5 modelos): 4->3 0.4631, 3->2 0.4247; reducao >=20% em 3b em 2, sem reducao em 0; nao avaliaveis: ['meta-llama/Llama-3.2-3B', 'Qwen/Qwen3-4B']; pendentes: ['HuggingFaceTB/SmolLM3-3B']"
+  }
+ },
+ "pareto": [
+  {
+   "modelo": "HuggingFaceTB/SmolLM3-3B",
+   "metodo": "rtn",
+   "bits": 2,
+   "tamanho_gb": 0.979,
+   "Q": 0.0
+  },
+  {
+   "modelo": "HuggingFaceTB/SmolLM3-3B",
+   "metodo": "rtn",
+   "bits": 3,
+   "tamanho_gb": 1.363,
+   "Q": 0.0911
+  },
+  {
+   "modelo": "HuggingFaceTB/SmolLM3-3B",
+   "metodo": "rtn",
+   "bits": 4,
+   "tamanho_gb": 1.747,
+   "Q": 0.8524
+  },
+  {
+   "modelo": "HuggingFaceTB/SmolLM3-3B",
+   "metodo": "rtn",
+   "bits": 8,
+   "tamanho_gb": 3.285,
+   "Q": 0.9992
+  },
+  {
+   "modelo": "HuggingFaceTB/SmolLM3-3B",
+   "metodo": "fp",
+   "bits": 16,
+   "tamanho_gb": 6.167,
+   "Q": 1.0
+  },
+  {
+   "modelo": "Qwen/Qwen3-0.6B",
+   "metodo": "dwq",
+   "bits": 2,
+   "tamanho_gb": 0.198,
+   "Q": 0.0022
+  },
+  {
+   "modelo": "Qwen/Qwen3-0.6B",
+   "metodo": "dwq",
+   "bits": 3,
+   "tamanho_gb": 0.272,
+   "Q": 0.5428
+  },
+  {
+   "modelo": "Qwen/Qwen3-0.6B",
+   "metodo": "awq",
+   "bits": 3,
+   "tamanho_gb": 0.302,
+   "Q": 0.6276
+  },
+  {
+   "modelo": "Qwen/Qwen3-0.6B",
+   "metodo": "dwq",
+   "bits": 4,
+   "tamanho_gb": 0.347,
+   "Q": 0.8968
+  },
+  {
+   "modelo": "Qwen/Qwen3-0.6B",
+   "metodo": "gptq",
+   "bits": 4,
+   "tamanho_gb": 0.386,
+   "Q": 0.9155
+  },
+  {
+   "modelo": "Qwen/Qwen3-0.6B",
+   "metodo": "awq",
+   "bits": 8,
+   "tamanho_gb": 0.577,
+   "Q": 0.9856
+  },
+  {
+   "modelo": "Qwen/Qwen3-0.6B",
+   "metodo": "gptq",
+   "bits": 8,
+   "tamanho_gb": 0.606,
+   "Q": 0.992
+  },
+  {
+   "modelo": "Qwen/Qwen3-0.6B",
+   "metodo": "dwq",
+   "bits": 8,
+   "tamanho_gb": 0.645,
+   "Q": 0.9965
+  },
+  {
+   "modelo": "Qwen/Qwen3-0.6B",
+   "metodo": "fp",
+   "bits": 16,
+   "tamanho_gb": 1.204,
+   "Q": 1.0
+  },
+  {
+   "modelo": "Qwen/Qwen3-1.7B",
+   "metodo": "dwq",
+   "bits": 2,
+   "tamanho_gb": 0.549,
+   "Q": 0.0037
+  },
+  {
+   "modelo": "Qwen/Qwen3-1.7B",
+   "metodo": "dwq",
+   "bits": 3,
+   "tamanho_gb": 0.765,
+   "Q": 0.6438
+  },
+  {
+   "modelo": "Qwen/Qwen3-1.7B",
+   "metodo": "awq",
+   "bits": 3,
+   "tamanho_gb": 0.823,
+   "Q": 0.7903
+  },
+  {
+   "modelo": "Qwen/Qwen3-1.7B",
+   "metodo": "dwq",
+   "bits": 4,
+   "tamanho_gb": 0.98,
+   "Q": 0.9336
+  },
+  {
+   "modelo": "Qwen/Qwen3-1.7B",
+   "metodo": "awq",
+   "bits": 4,
+   "tamanho_gb": 0.999,
+   "Q": 0.9767
+  },
+  {
+   "modelo": "Qwen/Qwen3-1.7B",
+   "metodo": "awq",
+   "bits": 8,
+   "tamanho_gb": 1.704,
+   "Q": 1.0007
+  },
+  {
+   "modelo": "Qwen/Qwen3-1.7B",
+   "metodo": "gptq",
+   "bits": 8,
+   "tamanho_gb": 1.762,
+   "Q": 1.001
+  },
+  {
+   "modelo": "Qwen/Qwen3-4B",
+   "metodo": "rtn",
+   "bits": 2,
+   "tamanho_gb": 1.269,
+   "Q": 0.0012
+  },
+  {
+   "modelo": "Qwen/Qwen3-4B",
+   "metodo": "awq",
+   "bits": 2,
+   "tamanho_gb": 1.391,
+   "Q": 0.1703
+  },
+  {
+   "modelo": "Qwen/Qwen3-4B",
+   "metodo": "rtn",
+   "bits": 3,
+   "tamanho_gb": 1.772,
+   "Q": 0.6523
+  },
+  {
+   "modelo": "Qwen/Qwen3-4B",
+   "metodo": "awq",
+   "bits": 3,
+   "tamanho_gb": 1.845,
+   "Q": 0.8069
+  },
+  {
+   "modelo": "Qwen/Qwen3-4B",
+   "metodo": "rtn",
+   "bits": 4,
+   "tamanho_gb": 2.275,
+   "Q": 0.9418
+  },
+  {
+   "modelo": "Qwen/Qwen3-4B",
+   "metodo": "awq",
+   "bits": 8,
+   "tamanho_gb": 4.116,
+   "Q": 0.9897
+  },
+  {
+   "modelo": "Qwen/Qwen3-4B",
+   "metodo": "rtn",
+   "bits": 8,
+   "tamanho_gb": 4.286,
+   "Q": 1.0055
+  },
+  {
+   "modelo": "meta-llama/Llama-3.2-3B",
+   "metodo": "rtn",
+   "bits": 2,
+   "tamanho_gb": 1.022,
+   "Q": 0.0026
+  },
+  {
+   "modelo": "meta-llama/Llama-3.2-3B",
+   "metodo": "awq",
+   "bits": 2,
+   "tamanho_gb": 1.145,
+   "Q": 0.0162
+  },
+  {
+   "modelo": "meta-llama/Llama-3.2-3B",
+   "metodo": "rtn",
+   "bits": 3,
+   "tamanho_gb": 1.423,
+   "Q": 0.6394
+  },
+  {
+   "modelo": "meta-llama/Llama-3.2-3B",
+   "metodo": "awq",
+   "bits": 3,
+   "tamanho_gb": 1.497,
+   "Q": 0.809
+  },
+  {
+   "modelo": "meta-llama/Llama-3.2-3B",
+   "metodo": "rtn",
+   "bits": 4,
+   "tamanho_gb": 1.825,
+   "Q": 0.9316
+  },
+  {
+   "modelo": "meta-llama/Llama-3.2-3B",
+   "metodo": "awq",
+   "bits": 4,
+   "tamanho_gb": 1.849,
+   "Q": 0.9554
+  },
+  {
+   "modelo": "meta-llama/Llama-3.2-3B",
+   "metodo": "awq",
+   "bits": 8,
+   "tamanho_gb": 3.259,
+   "Q": 0.9944
+  },
+  {
+   "modelo": "meta-llama/Llama-3.2-3B",
+   "metodo": "rtn",
+   "bits": 8,
+   "tamanho_gb": 3.431,
+   "Q": 0.9992
+  },
+  {
+   "modelo": "meta-llama/Llama-3.2-3B",
+   "metodo": "fp",
+   "bits": 16,
+   "tamanho_gb": 6.443,
+   "Q": 1.0
+  }
+ ]
+}

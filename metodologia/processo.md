@@ -86,7 +86,7 @@
   2. GPTQ 8 e 2 bits do Llama e do Qwen3-4B (o de 4 bits deu NaN; os de 8 e 2 provavelmente também, pela mesma causa: confirmar ou registrar).
   3. DWQ do SmolLM3 (caso à parte; não cabe com a implementação padrão) e a variante com alvos pré-calculados (protocolo-v2, 7 D), que ainda não fecha (20 GB de footprint no 0,6B).
   4. Linhas antigas de falha do Llama (erro 401, antes da aprovação da Meta): são sobrescritas quando os jobs rodarem.
-  5. ~~**Fase de velocidade** (H4)~~ — **concluída em 26/10** (20 min, 59 jobs MLX + 25 K-quants, 0 falhas, integridade do CSV confirmada). H4 **corroborada (provisória)**: E = 0,85 / 0,88 / 0,87 nos modelos de 3–4B (limiar 0,6). Ressalva: o app Claude esteve aberto (CPU média 62%); deriva dos controles −0,6%; repetir com o app fechado elimina a dúvida.
+  5. ~~**Fase de velocidade** (H4)~~ — **concluída em 26/10** (20 min, 59 jobs MLX + 25 K-quants, 0 falhas, integridade do CSV confirmada). H4 **corroborada (provisória)**: E = 0,85 / 0,88 / 0,87 nos modelos de 3–4B (limiar 0,6). Repetida em 26/10 com o app fechado (rodada 2, referência): diferença média de −0,4% nas 59 medidas e H4 inalterada (E = 0,83 / 0,85 / 0,87); K-quants do Qwen3-0,6B variaram ~20% entre rodadas (limitação).
   6. Repetir o tempo do `Qwen3-0.6B-fp` (8 h 53; hipótese de swap; protocolo-v2, 7 C).
   7. Desligar o agendamento `launchd` (`com.edgeai.etapa4`), que continua carregado e tenta disparar todo dia à meia-noite (um marcador impede a repetição).
 
