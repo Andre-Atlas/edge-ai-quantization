@@ -103,14 +103,15 @@ def pico_gptq_awq_gb(j):
         mlx = j["fp_gb"] + 1.5 * h + 1.5
     else:
         # AWQ rodado SEMPRE pelo awq_liberar.py (identico ao mlx-lm; a matriz passa --awq-liberar). O pico e dominado pelas
-        # entradas que o AWQ guarda de UM bloco (128 amostras x 512 tokens, bf16): footprint = 0,5 + 3,66 x input_feat + 0,3 GB.
-        # Medido: 5,43 / 9,30 / 13,37 / 13,18 GB (Qwen3-0,6B, 1,7B, Llama-3.2-3B, Qwen3-4B); residuos do ajuste <= 0,10 GB; a margem
-        # de 0,3 GB cobre os quatro. (A formula anterior, 4,0 + 1,4 x fp_gb, subestimou o Llama em 0,37 GB.)
+        # entradas que o AWQ guarda de UM bloco (128 amostras x 512 tokens, bf16) e cresce com a largura de bits (o modelo
+        # quantizado fica maior): footprint = -1,13 + 3,66 x input_feat + 0,40 x bits + 0,4 GB. Ajustado em 10 medicoes
+        # (Qwen3-0,6B e 1,7B a 4 bits; Llama-3.2-3B e Qwen3-4B a 2, 3, 4 e 8 bits), residuo maximo 0,23 GB; a margem de 0,4 GB
+        # cobre todas. Historico: 4,0 + 1,4 x fp_gb subestimou o Llama; 0,5 + 3,66 x input_feat (sem bits) subestimou os de 8 bits.
         if j.get("arq"):
             a = j["arq"]
             feat = 128 * 512 * 2 * (3 * a["d"] + a["o_in"] + 2 * a["d"] + a["i"]) / 1e9
-            return 0.5 + 3.66 * feat + 0.3
-        return 4.0 + 1.6 * j["fp_gb"]          # sem dimensoes de arquitetura: aproximacao conservadora
+            return -1.13 + 3.66 * feat + 0.40 * j["bits"] + 0.4
+        return 4.0 + 1.6 * j["fp_gb"] + 0.4 * j["bits"] / 4          # sem dimensoes de arquitetura: aproximacao conservadora
     return mlx * 1.4
 
 
