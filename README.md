@@ -20,9 +20,9 @@ Repositório de pesquisa para um artigo científico sobre **Edge AI e quantizaç
 | 0. Ambiente e piloto | ✅ |
 | 1. Protocolo | ✅ v1 e v2 |
 | 2. Pipeline robusto | ✅ (ampliado na etapa 4) |
-| 3. llama.cpp (K-quants) | 🟡 qualidade dos 5 modelos feita; velocidade pendente |
-| 4. Matriz completa | 🟡 51/72 jobs de qualidade válidos; AWQ dos modelos grandes em execução; velocidade pendente |
-| 5. Análise das hipóteses | 🟡 código pronto; vereditos finais dependem da etapa 4 |
+| 3. llama.cpp (K-quants) | ✅ qualidade e velocidade dos 5 modelos |
+| 4. Matriz completa | 🟡 59/72 jobs de qualidade válidos (8 a rodar); velocidade concluída (26/10) |
+| 5. Análise das hipóteses | 🟡 código pronto; H4 corroborada (provisória); H1–H3 inconclusivas |
 | 6. Painel (GitHub Pages) | 🟡 publicado com o piloto; atualizar ao fechar a etapa 4 |
 | 7. Literatura e redação | 🟡 rodada 2 feita; fichas e redação pendentes |
 

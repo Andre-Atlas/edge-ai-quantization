@@ -11,8 +11,8 @@
 | 0. Ambiente e piloto | `uv` + Python 3.14.9, mlx-lm 0.32.2; pipeline MLX; piloto no Qwen3-0,6B (4 bits) | FP e os 4 métodos rodam de ponta a ponta | ✅ concluída (22/10) |
 | 1. Protocolo | `protocolo.md` (tag `protocolo-v1`); `protocolo-v2.md` (tag `protocolo-v2`) | limiares de H1–H4 fixados antes da rodada final; mudanças só por nova versão | ✅ v1 (22/10) · ✅ v2 vigente (25/10) |
 | 2. Pipeline robusto | `rodar.py`, `avaliar.py`, `matriz.py`, `testes.py` | `testes.py` passa (determinismo, monotonicidade, 8 bits ≈ FP, tamanho, lm-eval) | ✅ 8/8 testes (22/10); ampliado na etapa 4 |
-| 3. llama.cpp (K-quants) | `kquant.py` (Q8_0, Q4_K_M, Q3_K_M, Q2_K com imatrix) | Q8_0 ≤ 1% do F16; PPL monotônica entre os tipos | ✅ validado no 0,6B (22/10); ✅ qualidade dos 5 modelos (25/10); ⏳ velocidade |
-| 4. Matriz completa | `resultados/resultados.csv`: qualidade de 89 jobs da v1 (72 após as lacunas da v2) + velocidade isolada | checagens por job; falhas marcadas sem interromper a fila; dados inválidos marcados | 🟡 qualidade 59/72 válidos, 5 inválidos (NaN), 8 a rodar; velocidade não iniciada |
+| 3. llama.cpp (K-quants) | `kquant.py` (Q8_0, Q4_K_M, Q3_K_M, Q2_K com imatrix) | Q8_0 ≤ 1% do F16; PPL monotônica entre os tipos | ✅ validado no 0,6B (22/10); ✅ qualidade dos 5 modelos (25/10); ✅ velocidade dos 5 modelos (26/10) |
+| 4. Matriz completa | `resultados/resultados.csv`: qualidade de 89 jobs da v1 (72 após as lacunas da v2) + velocidade isolada | checagens por job; falhas marcadas sem interromper a fila; dados inválidos marcados | 🟡 qualidade 59/72 válidos, 5 inválidos (NaN), 8 a rodar; ✅ velocidade (59 jobs MLX + 25 K-quants, 26/10) |
 | 5. Análise das hipóteses | `analise.py` → `hipoteses.json`; `analise_h3_nll.py` (secundária) | veredito só pelos critérios do protocolo; IC que cruza o limiar = inconclusiva | 🟡 código pronto e adaptado à v2; `hipoteses.json` final depende da etapa 4 |
 | 6. Painel (GitHub Pages) | `site/` gerado por `exportar_site.py`; `.github/workflows/pages.yml` | abre em desktop e celular, sem erro no console, números iguais ao CSV | 🟡 publicado com os dados do **piloto**; atualizar ao fechar a etapa 4 |
 | 7. Literatura e redação | rodada 2 de busca, fichas, rascunho pt-BR (ABNT) | cada afirmação aponta para uma linha do CSV; cada citação com DOI/arXiv conferido | 🟡 rodada 2 feita (#14–#27); fichas e redação pendentes |
@@ -75,7 +75,7 @@
 
 ### Etapa 3 — 🟡
 - Feito: `kquant.py`; validação no 0,6B (Q8_0 +0,2% sobre o F16; PPL monotônica); qualidade dos K-quants dos 5 modelos (25/10, `resultados/kquant.csv`).
-- Falta: analisar a velocidade dos K-quants (`kquant_velocidade.py`, `llama-bench`), executada junto da fase de velocidade em 26/10.
+- Falta: nada (velocidade dos K-quants medida em 26/10, 25 configurações; resultados em `resultados/kquant-velocidade.csv`).
 
 ### Etapa 4 — 🟡 (em execução)
 - Feito: qualidade de **59 dos 72 jobs** da grade v2 válidos (Qwen3-0,6B e 1,7B completos, com réplicas de AWQ; Llama e Qwen3-4B com FP, RTN e AWQ completos nas quatro larguras; SmolLM3 com FP e RTN); 5 jobs inválidos por NaN (GPTQ do SmolLM3 8/4/2, do Llama 4 e do Qwen3-4B 4); 17 combinações excluídas da grade da v1 (protocolo-v2, seção 3); causa do NaN demonstrada; medições de memória; ferramentas e diagnósticos documentados em `LOGICA-QUANTIZACAO.md`.
@@ -86,12 +86,12 @@
   2. GPTQ 8 e 2 bits do Llama e do Qwen3-4B (o de 4 bits deu NaN; os de 8 e 2 provavelmente também, pela mesma causa: confirmar ou registrar).
   3. DWQ do SmolLM3 (caso à parte; não cabe com a implementação padrão) e a variante com alvos pré-calculados (protocolo-v2, 7 D), que ainda não fecha (20 GB de footprint no 0,6B).
   4. Linhas antigas de falha do Llama (erro 401, antes da aprovação da Meta): são sobrescritas quando os jobs rodarem.
-  5. **Fase de velocidade** (H4): protegida (a velocidade só acrescenta colunas e pula linhas inválidas; falha em coluna própria) e **iniciada em 26/10** com o app Claude aberto por decisão do usuário; a contaminação é medida por controles antes/depois e amostragem de CPU. Falta analisar o resultado e calcular a eficiência E.
+  5. ~~**Fase de velocidade** (H4)~~ — **concluída em 26/10** (20 min, 59 jobs MLX + 25 K-quants, 0 falhas, integridade do CSV confirmada). H4 **corroborada (provisória)**: E = 0,85 / 0,88 / 0,87 nos modelos de 3–4B (limiar 0,6). Ressalva: o app Claude esteve aberto (CPU média 62%); deriva dos controles −0,6%; repetir com o app fechado elimina a dúvida.
   6. Repetir o tempo do `Qwen3-0.6B-fp` (8 h 53; hipótese de swap; protocolo-v2, 7 C).
   7. Desligar o agendamento `launchd` (`com.edgeai.etapa4`), que continua carregado e tenta disparar todo dia à meia-noite (um marcador impede a repetição).
 
 ### Etapa 5 — 🟡
-- Feito: `analise.py` com os critérios da v1 (22/10) e as regras da v2 (25/10), sensibilidade ao SmolLM3, testes sintéticos dos ramos; `analise_h3_nll.py` (análise secundária). Vereditos **provisórios** (25/10, ~17h, sem gravar `hipoteses.json`): H1 **inconclusiva** (critério atendido em 2 dos 4 modelos contados: Qwen3-1,7B e Llama; depois da correção que trata o job inválido como definitivo); H2 inconclusiva (1 de 2 células); H3 inconclusiva sem o SmolLM3 e refutada com ele; H4 aguardando a velocidade.
+- Feito: `analise.py` com os critérios da v1 (22/10) e as regras da v2 (25/10), sensibilidade ao SmolLM3, testes sintéticos dos ramos; `analise_h3_nll.py` (análise secundária). Vereditos **provisórios** (25/10, ~17h, sem gravar `hipoteses.json`): H1 **inconclusiva** (critério atendido em 2 dos 4 modelos contados: Qwen3-1,7B e Llama; depois da correção que trata o job inválido como definitivo); H2 inconclusiva (1 de 2 células); H3 inconclusiva sem o SmolLM3 e refutada com ele; **H4 corroborada** (E = 0,85–0,88 nos modelos de 3–4B).
 - Falta (lacunas apontadas em 22/10 e ainda abertas): (a) a acurácia (métrica secundária `Q_acc`) não entra nos vereditos nem como checagem de concordância; (b) as réplicas de AWQ não entram na análise (variância entre sementes calculada só no caderno); (c) o bootstrap mede só a incerteza do texto de avaliação, não a da calibração. Gerar `hipoteses.json` final quando a etapa 4 fechar.
 
 ### Etapa 6 — 🟡

@@ -140,6 +140,14 @@
 6. **Segundo erro (Assistente), pego antes de rodar:** o pré-voo exigia 14 GB livres e o guarda da `matriz.py` usava a regra da **qualidade** (12,8 GB para o Qwen3-4B fp), mas com o app aberto havia 11,3 GB livres: a fase ficaria horas esperando sem necessidade, porque a velocidade não carrega logits nem calibração. O orquestrador foi cancelado ainda na espera de 5 min (nada medido; `resultados.csv` idêntico ao backup), e corrigido: pré-voo ≥ 10 GB e, na fase de velocidade, limiar da matriz = peso do modelo (fp ou quantizado, `fp_gb × (bits + 0,5)/16`) + 2,5 GB (Qwen3-4B fp: 10,6 GB). Commit refeito antes de relançar.
 7. **Erro menor (Assistente):** o primeiro patch do orquestrador falhou por conflito de delimitadores de heredoc no meu próprio comando; não alterou nada (o arquivo estava intacto) e foi refeito pela ferramenta de edição.
 
+### Fase 18 — Fase de velocidade executada (26/10, 10:40–11:00)
+1. **Execução** (`rodar_velocidade.sh`, 10:40 → 11:00, **20 min**, bem abaixo da estimativa de 1–1,5 h): pré-voo "ociosa" (carga 1,4; 11,5 GB livres; swap 1,0 GB; bateria 100%; **apps abertos: Calendar e o app Claude**, entre outros); **59 jobs MLX** em 9,5 min e **25 configurações K-quants** em 3 min; 0 falhas; `[INTEGRIDADE] OK` (0 diferenças nas colunas de qualidade e nos status; as 5 linhas inválidas continuam `falhou:invalido-nan`). Fonte: `logs/etapa4.log`, `resultados/resultados.csv`, `resultados/kquant-velocidade.csv`.
+2. **Contaminação medida (app Claude aberto por decisão do usuário, D21):** CPU do app Claude em 26 amostras de 30 s: **média 62,5%, máximo 219%, acima de 10% em 23 das 26** — o app esteve ativo; CPU total do sistema média 70,5%. O **controle** (Qwen3-0,6B RTN 4 bits, 3 medidas antes e 3 depois): decode **409,6 tok/s (CV 0,2%) antes e 407,1 (CV 0,1%) depois, deriva −0,6%**. Leitura: o ruído entre medidas repetidas é pequeno, mas o app **esteve** consumindo CPU durante a fase; os controles medem só o início e o fim (não a fase inteira) e só a configuração menor. **Ressalva declarada:** as velocidades absolutas podem estar levemente subestimadas.
+3. **Resultado da H4 (provisório, `analise.py`):** eficiência `E = (ganho de decode) / (redução de tamanho)` a 4 bits: **SmolLM3-3B 0,85 (RTN), Llama-3.2-3B 0,88 (RTN e AWQ), Qwen3-4B 0,87 (RTN e AWQ)** — todos acima do limiar de 0,6 do protocolo: **H4 corroborada (provisória)**. Mesmo se a contaminação reduzisse o decode em 20%, E ficaria em ~0,7, ainda acima do limiar; a margem é grande. O SmolLM3 só tem o RTN (GPTQ inválido; AWQ inexistente; DWQ não executado).
+4. **Padrão por tamanho (não previsto):** E cresce com o modelo: Qwen3-0,6B **0,60–0,63**, Qwen3-1,7B **0,81–0,82**, modelos de 3–4B **0,85–0,88**. Nos modelos pequenos, uma parte maior do tempo de decodificação não depende dos pesos. Decodificação a 4 bits: 2,1× (0,6B), 2,8× (1,7B), 3,0–3,1× (3–4B) mais rápida que bf16, com tamanho 3,5× menor.
+5. **K-quants (llama.cpp, decode em tok/s; F16 → Q4_K_M → Q2_K):** Qwen3-0,6B 182,6 → 348,3 → 357,8; Qwen3-1,7B 77,4 → 187,4 → 209,1; Llama-3.2-3B 43,7 → 116,8 → 135,8; SmolLM3-3B 45,0 → 119,3 → 141,1; Qwen3-4B 34,8 → 94,0 → 106,7. Q3_K_M não é mais rápido que Q4_K_M (em alguns modelos é ligeiramente mais lento). Prefill praticamente igual entre os tipos.
+6. **Vereditos provisórios finais desta rodada:** **H4 corroborada**; H1, H2 e H3 inalteradas (inconclusivas; H3 refutada com o SmolLM3 contado).
+
 ## 1A. Raciocínio por trás de cada ação
 
 > Para cada ação: **por que** foi feita, e qual **alternativa** foi descartada e por quê. O raciocínio é o que foi apresentado ao usuário **no momento** da ação (conversa da sessão), não uma justificativa reconstruída depois; onde houve reconstrução, está marcado *(reconstruído)*. Princípios que se repetem: (P1) **não mudar o método depois de ver resultados** (pré-registro, Popper); (P2) **segurança da máquina antes de completar uma medição** (incidente de 22/10); (P3) **preservar o dado bruto** e excluir da análise só por regra explícita; (P4) **medir antes de decidir** quando a decisão depende de um número; (P5) **decisões que mudam o estudo são do usuário**; o Assistente propõe, com alternativas.
@@ -294,6 +302,13 @@
 | Controle antes/depois + amostragem de CPU em vez de pedir silêncio impossível | O usuário decidiu manter o app aberto; um efeito que não se pode eliminar deve ser **medido e declarado** (P1: nada escondido) | Ignorar o app; ou recusar rodar |
 | Manter a decisão do usuário de rodar agora | Decisões que mudam o estudo são dele (P5); o Assistente registrou o risco e a mitigação | Insistir em fechar o app |
 
+### Fase 18 — leitura dos resultados da velocidade
+| Ação | Por quê | Alternativa descartada |
+|---|---|---|
+| Reportar a contaminação (app com CPU média de 62%) mesmo com deriva de −0,6% | Os controles medem só início e fim e só o modelo menor; esconder o consumo do app seria omitir um grau de incerteza (P1) | Declarar "máquina ociosa" porque o pré-voo passou |
+| Testar se o veredito sobrevive a uma contaminação de 20% | A conclusão deve ser robusta ao pior caso plausível; E ≥ 0,7 mesmo assim | Refazer tudo com o app fechado sem necessidade |
+| Registrar o padrão E × tamanho como achado | Não estava no protocolo e é relevante para a discussão: o ganho de velocidade só se aproxima do teórico em modelos maiores | Reportar só o veredito da H4 |
+
 ## 2. Registro de decisões
 
 | # | Data | Decisão | Quem | Alternativas consideradas | Efeito |
@@ -332,6 +347,7 @@
 | 4 | 25/10 ≈16h20 | Lista automática concluída; NaN do GPTQ explicado; diagnósticos DWQ/AWQ em andamento |
 | 5 | 25/10 ≈16h30 | Diagnósticos DWQ/AWQ concluídos: causa do pico do AWQ identificada |
 | 6 | 26/10 ≈05h | AWQ de 3, 2 e 8 bits do Llama e do Qwen3-4B concluídos |
+| 7 | 26/10 ≈11h | Fase de velocidade concluída; H4 corroborada (provisória) |
 
 A ordem dos e-mails 1 e 2 na noite de 24/10 não foi registrada com horário.
 
@@ -366,7 +382,7 @@ A ordem dos e-mails 1 e 2 na noite de 24/10 não foi registrada com horário.
 
 1. ~~AWQ 3, 2 e 8 bits do Llama e do Qwen3-4B~~ — concluídos em 26/10 (Fase 16); sobram GPTQ 8 e 2 bits do Llama e do Qwen3-4B e o DWQ do SmolLM3 (8 jobs).
 2. DWQ: repetir o diagnóstico até salvar o modelo, com o cache do MLX limitado; comparar a qualidade com o DWQ padrão.
-3. Fase de velocidade (H4): protegida e iniciada em 26/10 (Fase 17); falta analisar o resultado, a contaminação e calcular a eficiência E.
+3. ~~Fase de velocidade (H4)~~ — concluída em 26/10 (Fases 17–18): H4 corroborada (provisória); resta, se quiser, **repetir com o app Claude fechado** para eliminar a ressalva de contaminação (20 min).
 4. Repetir o tempo do `Qwen3-0,6B-fp` (8 h 53) para confirmar a hipótese do swap (script não agendado).
 5. Desligar o agendamento `launchd` `com.edgeai.etapa4` (continua carregado; um marcador impede a repetição).
 6. ~~Consolidar `protocolo-v2`; restaurar `protocolo.md` à tag; commit e tag `protocolo-v2`~~ — feito em 25/10 (Fase 14).
