@@ -43,6 +43,8 @@
 | R4 | Coluna extra `impl` no CSV | Preenchida com `gptq_camada.py (Hessiana bf16, identico ao mlx-lm)` ou `awq_liberar.py (gc por bloco, identico ao mlx-lm)` quando a implementação alternativa é usada | Rastrear qual implementação gerou cada linha. **Linhas anteriores a 25/10 não têm `impl`: usaram o `mlx_lm` padrão** |
 | R5 | `import re, os` | — | Suporte às alterações acima |
 
+- **R6 (26/10) Fase de velocidade protegida:** na fase `velocidade` o `rodar.py` só acrescenta `prefill_tps(_dp)`, `decode_tps(_dp)`, `pico_memoria_gb`, `data_velocidade` e `commit_velocidade`; **pula** (sem medir nem gravar) linhas com status `falhou*`; só promove `qualidade → completo`; não regrava `data`, `commit`, `impl`, `mlx_lm`, `mlx` nem `python`. Função nova `linha_atual()`. Motivo: o comportamento anterior desfazia a marca `falhou:invalido-nan` e perdia a rastreabilidade da linha de qualidade (caderno, Fase 17).
+
 ### 2.2 `experimentos/matriz.py` (+86 / −4 linhas; `git diff experimentos/matriz.py`)
 
 | # | Alteração | Lógica | Motivo |
@@ -51,6 +53,7 @@
 | M2 | `arq` repassado de `matriz.json` para cada job | Dimensões da arquitetura (§4.1) | Calcular a memória das Hessianas |
 | M3 | Guarda de memória recalibrado (`estimativa_gb`, `necessario_sozinho_gb`, `pico_fp_rtn_gb`, `hessianas_gb`, `pico_gptq_awq_gb`, `usa_camada`, `pico_gptq_camada_gb`, `memoria_total_gb`) | Fórmulas na §4.2 | A estimativa antiga (`fp_gb × 1,5 + 4`) estava **alta demais para fp/rtn** (a fila ficou ~4,5 h parada esperando 14,1 GB livres num Mac com 12,6 GB, sendo que o pico medido do maior job era 10,5 GB) e **baixa demais para GPTQ e AWQ** (14,7 e 24,2 GB medidos contra 10,1 GB estimados no Qwen3-1,7B) |
 | M4 | `comando()` acrescenta `--gptq-camada` quando `usa_camada(j)` e `--awq-liberar` para todo AWQ | A matriz escolhe sozinha a implementação alternativa | Sem isso, remover a exclusão do GPTQ do Qwen3-4B faria a matriz rodar a implementação padrão (estimativa de 57 GB) |
+| M5 | Fase de velocidade: fila = qualidade válida (`acc_media` preenchida, status sem `falhou`) e modelo em disco; falha de velocidade grava `erro_velocidade` e **não toca o `status`** | Exclui os 5 jobs inválidos por NaN e os 8 sem qualidade (59 jobs); a falha de uma medida de velocidade não pode invalidar a linha de qualidade | Antes gravava `status = falhou:velocidade` na linha de qualidade válida |
 
 ### 2.3 `experimentos/matriz.json`
 
@@ -183,6 +186,13 @@ Roda uma quantização num processo próprio, no mesmo comando do `rodar.quantiz
 
 Compara dois diretórios de modelo tensor a tensor (pesos empacotados `uint32`, escalas e *biases*) e, opcionalmente, a NLL por janela do WikiText-2 do modelo novo contra o `.npy` do padrão, com a razão Q_novo/Q_padrão e IC 95% por *bootstrap* pareado (10 000 reamostragens). Usado em todas as validações de equivalência acima.
 
+### 3.8 `kquant_velocidade.py`, `rodar_velocidade.sh`, `resumo_contaminacao.py` — fase de velocidade
+
+- **`kquant_velocidade.py`:** `llama-bench -m <GGUF> -p 512 -n 128 -r 5 -ngl 99 -o csv` para cada modelo × tipo (F16, Q8_0, Q4_K_M, Q3_K_M, Q2_K), os mesmos parâmetros do MLX (`avaliar.velocidade`: prompt de 512, 128 gerados, 5 repetições após aquecimento). Grava `resultados/kquant-velocidade.csv` (retomável). Verificado em um GGUF (Qwen3-0,6B Q8_0: prefill 13 453 ± 30 e decode 276,9 ± 0,5 tok/s).
+- **`rodar_velocidade.sh`:** backup do `resultados.csv` → espera → **pré-voo** (nenhum job pesado, ≥ 14 GB livres, carga < 2 por 2 min; registra no log apps abertos, memória, swap e bateria) → **controle antes** (Qwen3-0,6B RTN 4 bits × 3, sem gravar) → amostragem de CPU do app Claude e do sistema a cada 30 s → `matriz.py --fase velocidade` → `kquant_velocidade.py` → **controle depois** → `resumo_contaminacao.py` → **checagem de integridade** (compara com o backup as colunas de qualidade, `data`, `commit`, `impl` e os `status` de falha; registra `[INTEGRIDADE] OK/FALHOU`).
+- **`resumo_contaminacao.py`:** média e máximo do CPU do app Claude e do sistema nas amostras; deriva e CV do decode do controle antes e depois. **Limite:** a contaminação pelo app aberto é medida, não eliminada; a atribuição a cada job é aproximada (amostras de 30 s).
+- **Verificação em cópia do CSV (26/10):** `rodar.py` na fase de velocidade: linha de qualidade → `completo` com decode 404,8 tok/s, prefill 14 143 tok/s, tudo de qualidade intacto, 0 outras linhas alteradas; GPTQ inválido do SmolLM3 → pulado; fila simulada com 59 jobs e 0 inválidos.
+
 ### 3.7 `analise_h3_nll.py` — análise secundária (pós-hoc) da H3
 
 `D_b = média das janelas de (NLL_q,b − NLL_fp) = ln(PPL_q / PPL_fp)` em nats por token; `S = (D₂ − D₃) − (D₃ − D₄)`; superlinear se o IC 95% de S > 0. Motivo: Q satura em 0 aos 2 bits, e o incremento de 3→2 bits de L = 1 − Q tem **teto** igual ao Q de 3 bits. Também reproduz o critério original e a 2ª metade da H3. Não substitui o veredito original. Resultado parcial em `resultados/h3_nll.md`.
@@ -236,7 +246,7 @@ Compara dois diretórios de modelo tensor a tensor (pesos empacotados `uint32`, 
 6. A fase de velocidade (H4) não foi iniciada; K-quants concluídos para os cinco modelos.
 7. ~~`protocolo-v2` rascunho; `protocolo.md` modificado~~ — resolvido em 25/10: v2 vigente (tag `protocolo-v2`), `protocolo.md` idêntico à tag `protocolo-v1`, `analise.py` aplicando a v2.
 
-## 8. Checksums SHA-256 do código e do protocolo no commit de 26/10/2026 06:20 (12 primeiros caracteres)
+## 8. Checksums SHA-256 do código e do protocolo no commit de 26/10/2026 10:39 (12 primeiros caracteres)
 
 Os documentos (caderno, processo, READMEs, este arquivo) não entram porque mudam a cada atualização; para eles vale o histórico do git. Compare com `shasum -a 256 <arquivo>`. Versões anteriores de `analise.py` e `matriz.py` estão em `resultados/backups/`.
 
@@ -251,18 +261,16 @@ Os documentos (caderno, processo, READMEs, este arquivo) não entram porque muda
 | `experimentos/comparar_gptq.py` | 62 | `01d1c97ae066` |
 | `experimentos/analise_h3_nll.py` | 147 | `54bd8aa132f5` |
 | `experimentos/analise.py` | 233 | `8ede24fecad3` |
-| `experimentos/matriz.py` | 223 | `e306ab781c95` |
-| `experimentos/rodar.py` | 208 | `0d17f54ca69f` |
+| `experimentos/matriz.py` | 232 | `2e358f056c2d` |
+| `experimentos/rodar.py` | 226 | `9ae89a953765` |
 | `experimentos/matriz.json` | 98 | `b87866b9f463` |
+| `experimentos/kquant_velocidade.py` | 80 | `4cb2e79614d8` |
+| `experimentos/resumo_contaminacao.py` | 36 | `e1b5cff664d2` |
+| `experimentos/rodar_velocidade.sh` | 100 | `b2cd09ef5e27` |
 | `experimentos/vigiar_espera.sh` | 41 | `e63eacee9573` |
-| `experimentos/agendar_llama_gptq.sh` | 20 | `c260655f9555` |
-| `experimentos/agendar_qwen4b_gptq.sh` | 29 | `135d56597bd6` |
-| `experimentos/agendar_awq_grandes.sh` | 29 | `6eec9c2ba26a` |
 | `experimentos/agendar_awq_restantes.sh` | 33 | `46461e07dec4` |
-| `experimentos/testar_dwq_alvos.sh` | 28 | `0cafb6222018` |
 | `experimentos/continuar_lista.sh` | 22 | `fd4ac6263d7c` |
 | `experimentos/rodar_diagnosticos.sh` | 40 | `b471a0aca0e7` |
-| `experimentos/repetir_fp_0.6B.sh` | 18 | `241050aa5679` |
 | `metodologia/protocolo.md` | 44 | `642834289f36` |
 | `metodologia/protocolo-v2.md` | 123 | `df093ffbfa54` |
 

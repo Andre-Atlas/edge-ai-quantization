@@ -75,7 +75,7 @@
 
 ### Etapa 3 — 🟡
 - Feito: `kquant.py`; validação no 0,6B (Q8_0 +0,2% sobre o F16; PPL monotônica); qualidade dos K-quants dos 5 modelos (25/10, `resultados/kquant.csv`).
-- Falta: velocidade dos K-quants (`llama-bench`, com a máquina ociosa, dentro da fase de velocidade).
+- Falta: analisar a velocidade dos K-quants (`kquant_velocidade.py`, `llama-bench`), executada junto da fase de velocidade em 26/10.
 
 ### Etapa 4 — 🟡 (em execução)
 - Feito: qualidade de **59 dos 72 jobs** da grade v2 válidos (Qwen3-0,6B e 1,7B completos, com réplicas de AWQ; Llama e Qwen3-4B com FP, RTN e AWQ completos nas quatro larguras; SmolLM3 com FP e RTN); 5 jobs inválidos por NaN (GPTQ do SmolLM3 8/4/2, do Llama 4 e do Qwen3-4B 4); 17 combinações excluídas da grade da v1 (protocolo-v2, seção 3); causa do NaN demonstrada; medições de memória; ferramentas e diagnósticos documentados em `LOGICA-QUANTIZACAO.md`.
@@ -86,7 +86,7 @@
   2. GPTQ 8 e 2 bits do Llama e do Qwen3-4B (o de 4 bits deu NaN; os de 8 e 2 provavelmente também, pela mesma causa: confirmar ou registrar).
   3. DWQ do SmolLM3 (caso à parte; não cabe com a implementação padrão) e a variante com alvos pré-calculados (protocolo-v2, 7 D), que ainda não fecha (20 GB de footprint no 0,6B).
   4. Linhas antigas de falha do Llama (erro 401, antes da aprovação da Meta): são sobrescritas quando os jobs rodarem.
-  5. **Fase de velocidade** (H4), com a máquina ociosa: simular antes (`matriz.py --fase velocidade --simular`), porque uma falha grava `falhou:velocidade` na linha de qualidade válida e a análise a descartaria.
+  5. **Fase de velocidade** (H4): protegida (a velocidade só acrescenta colunas e pula linhas inválidas; falha em coluna própria) e **iniciada em 26/10** com o app Claude aberto por decisão do usuário; a contaminação é medida por controles antes/depois e amostragem de CPU. Falta analisar o resultado e calcular a eficiência E.
   6. Repetir o tempo do `Qwen3-0.6B-fp` (8 h 53; hipótese de swap; protocolo-v2, 7 C).
   7. Desligar o agendamento `launchd` (`com.edgeai.etapa4`), que continua carregado e tenta disparar todo dia à meia-noite (um marcador impede a repetição).
 

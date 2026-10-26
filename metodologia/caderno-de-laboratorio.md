@@ -126,6 +126,19 @@
 5. **Fórmula refeita com 10 medições** (4 bits: Qwen3-0,6B e 1,7B; 2, 3, 4 e 8 bits: Llama e Qwen3-4B): `footprint = −1,13 + 3,66 × input_feat + 0,40 × bits + 0,4 GB`. Alternativas testadas: só `input_feat` (resíduo máximo 1,61 GB), `input_feat` + tamanho quantizado (0,40 GB) e `input_feat` + bits (**0,23 GB**, escolhida). O termo de 0,40 GB por bit coincide com o crescimento do modelo quantizado (≈ `fp_gb`/16 por bit). Cobre as 10 medições, folga mínima 0,14 GB. Cópia anterior: `resultados/backups/matriz.py.antes-da-formula-awq-v3`. **Limite:** só dois modelos medidos em várias larguras (e os dois de 3–4B têm a mesma soma de dimensões, 26 624).
 6. **Estado da grade v2 (72 jobs de qualidade):** **59 válidos**, 5 inválidos (NaN do GPTQ), **8 a rodar**: GPTQ 8 e 2 bits do Llama e do Qwen3-4B (4 jobs; NaN esperado) e DWQ do SmolLM3 (4 jobs; caso à parte).
 
+### Fase 17 — Fase de velocidade (H4): riscos encontrados, proteções e execução (26/10)
+1. **Pergunta do usuário:** quanto tempo leva a fase de velocidade. Estimativa (do código e do piloto, não medida): 1–1,5 h (MLX 40–60 min; K-quants 10–15 min).
+2. **Quatro riscos de corrupção de dados encontrados na leitura do código (nenhum chegou a ocorrer):**
+   - (a) `rodar.py` gravava `status = completo` na fase de velocidade, o que **desfaria a marca `falhou:invalido-nan`** dos 5 GPTQ com NaN (e a fila da `matriz.py` os incluía: só filtrava "modelo em disco");
+   - (b) `matriz.py` gravava `status = falhou:velocidade` na linha de **qualidade válida** se um job de velocidade falhasse (a análise a descartaria);
+   - (c) `rodar.py` regravava `data` e `commit` da linha, perdendo **quando e com que versão a qualidade foi medida**;
+   - (d) `rodar.py` regravava `impl`, que marcaria como `awq_liberar.py`/`gptq_camada.py` linhas geradas pelo `mlx_lm` padrão.
+   Além disso, a velocidade dos K-quants não estava automatizada (o `kquant.py` só documenta o `llama-bench`).
+3. **Proteções (plano aprovado):** `rodar.py` — a velocidade só acrescenta as suas colunas (`prefill_tps`, `decode_tps`, `pico_memoria_gb`, `data_velocidade`, `commit_velocidade`), **pula** linhas com `status falhou*` sem medir nem gravar, e só promove `qualidade → completo`; `matriz.py` — fila da velocidade = qualidade **válida** e modelo em disco (59 jobs; exclui os 5 inválidos e os 8 sem qualidade) e falha de velocidade em coluna própria (`erro_velocidade`), sem tocar no `status`; novo `kquant_velocidade.py` (`llama-bench -p 512 -n 128 -r 5 -ngl 99`, retomável, 25 configurações); novo `rodar_velocidade.sh` (backup do CSV, espera, pré-voo que **registra as condições da máquina**, MLX, K-quants, controle de contaminação e checagem de integridade das colunas de qualidade contra o backup).
+4. **Testes antes de disparar (em cópia do CSV):** Qwen3-0,6B RTN 4 bits: `qualidade → completo` com decode 404,8 tok/s e prefill 14 143 tok/s (piloto: 402 e 13 745), `data`/`commit`/`impl`/PPL/acurácia/tamanho/versões intactos, nenhuma outra linha alterada; GPTQ do SmolLM3 (inválido): **pulado** sem gravar; `llama-bench` no Qwen3-0,6B Q8_0: decode 276,9 tok/s, retomável (reexecução pula). Fila simulada: 59 jobs, nenhum inválido.
+5. **Decisão do usuário (D21):** rodar **agora** e **manter o app Claude aberto** (para análise e envio do e-mail). O app consome CPU, GPU e memória, e a H4 mede GPU e banda de memória: o efeito **não pode ser eliminado, só medido e declarado**. Por isso o orquestrador mede a **mesma configuração** (Qwen3-0,6B RTN 4 bits) 3 vezes antes e 3 depois da fase (sem gravar no CSV) e amostra a cada 30 s o CPU do app Claude e o total do sistema (`logs/velocidade-amostras.log`); `resumo_contaminacao.py` calcula a deriva e o CV dos controles. Se a deriva for pequena e o app ficar quase parado, o resultado vale com a ressalva declarada; senão, os jobs afetados são refeitos com o app fechado. Durante a execução o Assistente não faz comandos pesados (só o vigia de 1 h, que consome milissegundos por minuto).
+6. **Erro menor (Assistente):** o primeiro patch do orquestrador falhou por conflito de delimitadores de heredoc no meu próprio comando; não alterou nada (o arquivo estava intacto) e foi refeito pela ferramenta de edição.
+
 ## 1A. Raciocínio por trás de cada ação
 
 > Para cada ação: **por que** foi feita, e qual **alternativa** foi descartada e por quê. O raciocínio é o que foi apresentado ao usuário **no momento** da ação (conversa da sessão), não uma justificativa reconstruída depois; onde houve reconstrução, está marcado *(reconstruído)*. Princípios que se repetem: (P1) **não mudar o método depois de ver resultados** (pré-registro, Popper); (P2) **segurança da máquina antes de completar uma medição** (incidente de 22/10); (P3) **preservar o dado bruto** e excluir da análise só por regra explícita; (P4) **medir antes de decidir** quando a decisão depende de um número; (P5) **decisões que mudam o estudo são do usuário**; o Assistente propõe, com alternativas.
@@ -269,6 +282,17 @@
 | Registrar a violação da regra (E16) | Os 8 bits foram 1,2–1,4 GB acima do previsto: um erro do Assistente que não causou dano, mas que um registro só de acertos esconderia | Omitir |
 | Não rodar mais jobs sem antes recalibrar | O próximo job a rodar usaria a fórmula errada para o limiar de partida | Rodar em seguida |
 
+### Fase 17 — fase de velocidade
+| Ação | Por quê | Alternativa descartada |
+|---|---|---|
+| Ler o código antes de rodar | A fase grava no mesmo CSV que guarda a qualidade e as marcas de invalidade; um erro ali corromperia dados já obtidos e irreproduzíveis em horas (P3) | Rodar e corrigir depois |
+| Velocidade só **acrescenta** colunas | Preserva a rastreabilidade (`data`, `commit`, `impl`) da medida de qualidade | Regravar a linha inteira (comportamento anterior) |
+| Pular linhas inválidas **sem medir** | Medir velocidade de um modelo com NaN não tem significado científico e desfaria a marca de invalidade | Medir e marcar depois |
+| Testar na **cópia** do CSV antes de disparar | Se a proteção estivesse errada, o dano ficaria na cópia (P3) | Testar direto no CSV |
+| Commit antes da execução | `commit_velocidade` grava o hash do código; com alterações sem commit sairia `+sujo` e a medida não seria reprodutível | Commitar depois |
+| Controle antes/depois + amostragem de CPU em vez de pedir silêncio impossível | O usuário decidiu manter o app aberto; um efeito que não se pode eliminar deve ser **medido e declarado** (P1: nada escondido) | Ignorar o app; ou recusar rodar |
+| Manter a decisão do usuário de rodar agora | Decisões que mudam o estudo são dele (P5); o Assistente registrou o risco e a mitigação | Insistir em fechar o app |
+
 ## 2. Registro de decisões
 
 | # | Data | Decisão | Quem | Alternativas consideradas | Efeito |
@@ -293,6 +317,7 @@
 | D18 | 25/10 | Push direto na `main`; painel mantido com o piloto; `protocolo.md` restaurado à v1 e tag `protocolo-v2`; sessões agrupadas | Usuário | branch + PR; publicar dados parciais; v2 como rascunho; só renomear | Fase 14 |
 | D19 | 25/10 | Corrigir o `analise.py` (invalidados não são pendentes) e a fórmula de memória do AWQ; rodar os AWQ de 3, 2 e 8 bits do Llama e do Qwen3-4B | Usuário | só relatar; esperar o resultado do 4B para recalibrar | H1 provisória passa a inconclusiva; seis jobs em execução |
 | D20 | 25/10 | Avisar por e-mail quando os seis AWQ terminarem | Usuário | — | E-mail 6 (26/10, ~05h) |
+| D21 | 26/10 | Rodar a fase de velocidade **agora**, com o app Claude **aberto** (para análise e e-mail) | Usuário | rodar à noite com o app fechado; às 2h | Contaminação medida (controles e amostras), não eliminada |
 
 **Decisões de implementação do Assistente (sem escolha do usuário):** fator 1,4 do pico do MLX ao footprint; teto de partida = metade da RAM; estimativa `2,1 × fp_gb + 0,5` do GPTQ camada a camada; `awq_liberar` sempre ativo na matriz; remoção de entradas de `excluir` quando a alternativa foi validada; marcação de linhas NaN como inválidas (mesma regra que o usuário aprovou para o SmolLM3). Todas estão em `LOGICA-QUANTIZACAO.md` com o motivo.
 
@@ -339,7 +364,7 @@ A ordem dos e-mails 1 e 2 na noite de 24/10 não foi registrada com horário.
 
 1. ~~AWQ 3, 2 e 8 bits do Llama e do Qwen3-4B~~ — concluídos em 26/10 (Fase 16); sobram GPTQ 8 e 2 bits do Llama e do Qwen3-4B e o DWQ do SmolLM3 (8 jobs).
 2. DWQ: repetir o diagnóstico até salvar o modelo, com o cache do MLX limitado; comparar a qualidade com o DWQ padrão.
-3. Fase de velocidade (H4), com a máquina ociosa; simular antes (`matriz.py --fase velocidade --simular`), porque uma falha de velocidade grava `falhou:velocidade` na linha de qualidade válida e a análise a descartaria.
+3. Fase de velocidade (H4): protegida e iniciada em 26/10 (Fase 17); falta analisar o resultado, a contaminação e calcular a eficiência E.
 4. Repetir o tempo do `Qwen3-0,6B-fp` (8 h 53) para confirmar a hipótese do swap (script não agendado).
 5. Desligar o agendamento `launchd` `com.edgeai.etapa4` (continua carregado; um marcador impede a repetição).
 6. ~~Consolidar `protocolo-v2`; restaurar `protocolo.md` à tag; commit e tag `protocolo-v2`~~ — feito em 25/10 (Fase 14).

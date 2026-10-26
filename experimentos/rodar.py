@@ -69,6 +69,14 @@ def gravar(linha, csv_path=CSV):
             w.writerows(linhas)
 
 
+def linha_atual(linha_chave, csv_path=CSV):
+    """A linha do CSV com a mesma chave (ou None)."""
+    if not csv_path.exists():
+        return None
+    ch = tuple(str(linha_chave[k]) for k in CHAVE)
+    return next((r for r in csv.DictReader(open(csv_path)) if tuple(r.get(k, "") for k in CHAVE) == ch), None)
+
+
 def existe(linha_chave, coluna, csv_path=CSV):
     if not csv_path.exists():
         return False
@@ -197,8 +205,18 @@ def main():
         m = avaliar(destino, "qualidade", NLL / f"{ident}.npy", a.limite)
         gravar({**base, **arredondar(m), "status": "qualidade"}, a.csv)
     if a.fase in ("velocidade", "tudo") and (a.refazer or not existe(chave, "decode_tps", a.csv)):
-        m = avaliar(destino, "velocidade")
-        gravar({**base, **arredondar(m), "status": "completo"}, a.csv)
+        # Protecoes de 26/10/2026 (caderno, Fase 17): a velocidade so ACRESCENTA as suas colunas. Nao regrava data, commit,
+        # impl nem versoes da linha de qualidade (rastreabilidade), nao toca linhas invalidas/falhas e so promove
+        # status "qualidade" -> "completo" (antes gravava "completo" por cima de "falhou:invalido-nan").
+        atual = linha_atual(chave, a.csv)
+        if atual and atual.get("status", "").startswith("falhou"):
+            print(f"[velocidade] {ident} PULADO: status {atual['status']} (linha invalida ou com falha; nada medido nem gravado)")
+        else:
+            m = avaliar(destino, "velocidade")
+            novo = {**chave, **arredondar(m), "data_velocidade": datetime.date.today().isoformat(), "commit_velocidade": commit()}
+            if atual is None or atual.get("status", "") in ("", "qualidade"):
+                novo["status"] = "completo"
+            gravar(novo, a.csv)
     if a.apagar:
         shutil.rmtree(destino, ignore_errors=True)
     print(f"ok {ident}")

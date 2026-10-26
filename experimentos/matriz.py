@@ -8,6 +8,7 @@ Fase qualidade: quantiza + PPL + lm-eval, em paralelo, com guarda de memoria (so
 processos concorrentes dividem GPU e banda de memoria e contaminariam a medida (H4).
 """
 import argparse
+import csv
 import itertools
 import json
 import subprocess
@@ -181,6 +182,11 @@ def main():
     if a.fase == "velocidade":
         a.workers = 1
         fila = [j for j in fila if (rodar.MODELOS / rodar.identificador(j["modelo"], j["metodo"], j["bits"], j["grupo"], j["seed"]) / "config.json").exists()]
+        # So mede velocidade de quem tem qualidade VALIDA (acc_media preenchida e status sem "falhou"): exclui os jobs
+        # invalidos por NaN e os que falharam (protecao de 26/10/2026; caderno, Fase 17).
+        validas = {tuple(r.get(k, "") for k in rodar.CHAVE) for r in csv.DictReader(open(rodar.CSV))
+                   if r.get("acc_media") and not r.get("status", "").startswith("falhou")} if rodar.CSV.exists() else set()
+        fila = [j for j in fila if tuple(str(j[k]) for k in rodar.CHAVE) in validas]
     print(f"{len(fila)} jobs pendentes ({a.fase}), workers={a.workers}")
     if a.simular:
         for j in fila:
@@ -193,7 +199,10 @@ def main():
             if p.poll() is not None:
                 rodando.remove((p, j, t0))
                 ident = rodar.identificador(j["modelo"], j["metodo"], j["bits"], j["grupo"], j["seed"])
-                if p.returncode != 0:
+                if p.returncode != 0 and a.fase == "velocidade":
+                    # falha de velocidade NAO pode marcar como falha a linha de qualidade valida: coluna propria
+                    rodar.gravar({**{k: j[k] for k in rodar.CHAVE}, "erro_velocidade": time.strftime("%Y-%m-%d %H:%M")})
+                elif p.returncode != 0:
                     rodar.gravar({**{k: j[k] for k in rodar.CHAVE}, "data": time.strftime("%Y-%m-%d"),
                                   "status": f"falhou:{a.fase}"})
                 print(f"[{'ok' if p.returncode == 0 else 'FALHOU'}] {ident} ({time.time() - t0:.0f}s)", flush=True)
