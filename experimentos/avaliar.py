@@ -80,7 +80,7 @@ def velocidade(model, tokenizer, prompt_tokens=512, gen_tokens=128, trials=5):
     from mlx_lm import stream_generate
 
     prompt = mx.array(tokenizer.encode("hello " * prompt_tokens)[:prompt_tokens])
-    pre, dec = [], []
+    pre, dec, ntok = [], [], []
     for t in range(trials + 1):  # a 1a rodada e aquecimento
         r = None
         for r in stream_generate(model, tokenizer, prompt, max_tokens=gen_tokens):
@@ -88,7 +88,10 @@ def velocidade(model, tokenizer, prompt_tokens=512, gen_tokens=128, trials=5):
         if t > 0:
             pre.append(r.prompt_tps)
             dec.append(r.generation_tps)
-    return pre, dec
+            ntok.append(r.generation_tokens)
+    # Se o modelo emite EOS cedo (modelo degenerado), generation_tps e calculado sobre poucos tokens e fica absurdo
+    # (Llama-3.2-3B AWQ 2 bits: 1 token, ~47 mil tok/s). Devolve o minimo de tokens gerados para sinalizar a linha.
+    return pre, dec, min(ntok)
 
 
 def main():
@@ -132,9 +135,9 @@ def main():
     else:
         model, tok = load(a.modelo)
         mx.reset_peak_memory()
-        pre, dec = velocidade(model, tok)
+        pre, dec, ntok_min = velocidade(model, tok)
         out.update(prefill_tps=media(pre), prefill_tps_dp=dp(pre), decode_tps=media(dec), decode_tps_dp=dp(dec),
-                   pico_memoria_gb=mx.get_peak_memory() / 1e9)
+                   decode_tokens_min=ntok_min, pico_memoria_gb=mx.get_peak_memory() / 1e9)
     print(json.dumps(out))
 
 
