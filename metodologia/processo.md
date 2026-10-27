@@ -12,7 +12,7 @@
 | 1. Protocolo | `protocolo.md` (tag `protocolo-v1`); `protocolo-v2.md` (tag `protocolo-v2`) | limiares de H1–H4 fixados antes da rodada final; mudanças só por nova versão | ✅ v1 (22/10) · ✅ v2 vigente (25/10) |
 | 2. Pipeline robusto | `rodar.py`, `avaliar.py`, `matriz.py`, `testes.py` | `testes.py` passa (determinismo, monotonicidade, 8 bits ≈ FP, tamanho, lm-eval) | ✅ 8/8 testes (22/10); ampliado na etapa 4 |
 | 3. llama.cpp (K-quants) | `kquant.py` (Q8_0, Q4_K_M, Q3_K_M, Q2_K com imatrix) | Q8_0 ≤ 1% do F16; PPL monotônica entre os tipos | ✅ validado no 0,6B (22/10); ✅ qualidade dos 5 modelos (25/10); ✅ velocidade dos 5 modelos (26/10) |
-| 4. Matriz completa | `resultados/resultados.csv`: qualidade de 89 jobs da v1 (72 após as lacunas da v2) + velocidade isolada | checagens por job; falhas marcadas sem interromper a fila; dados inválidos marcados | 🟡 qualidade 59/72 válidos, 5 inválidos (NaN), 8 a rodar; ✅ velocidade (59 jobs MLX + 25 K-quants, 26/10) |
+| 4. Matriz completa | `resultados/resultados.csv`: qualidade de 89 jobs da v1 (72 após as lacunas da v2) + velocidade isolada | checagens por job; falhas marcadas sem interromper a fila; dados inválidos marcados | ✅ qualidade fechada (59 válidos, 9 inválidos por NaN, 0 pendentes; DWQ × SmolLM3 excluído); ✅ velocidade (59 jobs MLX + 25 K-quants, 26/10) |
 | 5. Análise das hipóteses | `analise.py` → `hipoteses.json`; `analise_h3_nll.py` (secundária) | veredito só pelos critérios do protocolo; IC que cruza o limiar = inconclusiva | 🟡 código pronto e adaptado à v2; `hipoteses.json` final depende da etapa 4 |
 | 6. Painel (GitHub Pages) | `site/` gerado por `exportar_site.py`; `.github/workflows/pages.yml` | abre em desktop e celular, sem erro no console, números iguais ao CSV | 🟡 publicado com os dados do **piloto**; atualizar ao fechar a etapa 4 |
 | 7. Literatura e redação | rodada 2 de busca, fichas, rascunho pt-BR (ABNT) | cada afirmação aponta para uma linha do CSV; cada citação com DOI/arXiv conferido | 🟡 rodada 2 feita (#14–#27); fichas e redação pendentes |
@@ -83,8 +83,8 @@
 - Nada em execução em 26/10 05h.
 - Falta:
   1. ~~AWQ 8/3/2 bits do Llama e do Qwen3-4B~~ — concluídos em 26/10.
-  2. GPTQ 8 e 2 bits do Llama e do Qwen3-4B (o de 4 bits deu NaN; os de 8 e 2 provavelmente também, pela mesma causa: confirmar ou registrar).
-  3. DWQ do SmolLM3 (caso à parte; não cabe com a implementação padrão) e a variante com alvos pré-calculados (protocolo-v2, 7 D), que ainda não fecha (20 GB de footprint no 0,6B).
+  2. ~~GPTQ 8 e 2 bits do Llama e do Qwen3-4B~~ — concluídos em 26/10 (Fase 22): todos NaN; GPTQ inválido em todos os modelos de 3–4B.
+  3. ~~DWQ do SmolLM3~~ — cancelado e excluído em 26/10 (D24; memória); a variante com alvos pré-calculados nunca fechou (20 GB de footprint no 0,6B) e não será pursuida.
   4. Linhas antigas de falha do Llama (erro 401, antes da aprovação da Meta): são sobrescritas quando os jobs rodarem.
   5. ~~**Fase de velocidade** (H4)~~ — **concluída em 26/10** (20 min, 59 jobs MLX + 25 K-quants, 0 falhas, integridade do CSV confirmada). H4 **corroborada (provisória)**: E = 0,85 / 0,88 / 0,87 nos modelos de 3–4B (limiar 0,6). Repetida em 26/10 com o app fechado (rodada 2, referência): diferença média de −0,4% nas 59 medidas e H4 inalterada (E = 0,83 / 0,85 / 0,87); K-quants do Qwen3-0,6B variaram ~20% entre rodadas (limitação).
   6. Repetir o tempo do `Qwen3-0.6B-fp` (8 h 53; hipótese de swap; protocolo-v2, 7 C).

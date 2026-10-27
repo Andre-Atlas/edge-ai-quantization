@@ -168,12 +168,12 @@
  },
  "sensibilidade_com_caso_separado": {
   "H1": {
-   "veredito": "aguardando dados",
-   "resumo": "criterio atendido em 2; RTN >= 0,95 em 0; nenhum ciente >= 0,95 em 2; nao avaliaveis: []; pendentes: ['HuggingFaceTB/SmolLM3-3B']"
+   "veredito": "inconclusiva",
+   "resumo": "criterio atendido em 2; RTN >= 0,95 em 0; nenhum ciente >= 0,95 em 2; nao avaliaveis: ['HuggingFaceTB/SmolLM3-3B']; pendentes: []"
   },
   "H3": {
    "veredito": "refutada",
-   "resumo": "incrementos medios de L (RTN, 5 modelos): 4->3 0.4631, 3->2 0.4247; reducao >=20% em 3b em 2, sem reducao em 0; nao avaliaveis: ['meta-llama/Llama-3.2-3B', 'Qwen/Qwen3-4B']; pendentes: ['HuggingFaceTB/SmolLM3-3B']"
+   "resumo": "incrementos medios de L (RTN, 5 modelos): 4->3 0.4631, 3->2 0.4247; reducao >=20% em 3b em 2, sem reducao em 0; nao avaliaveis: ['HuggingFaceTB/SmolLM3-3B', 'meta-llama/Llama-3.2-3B', 'Qwen/Qwen3-4B']; pendentes: []"
   }
  },
  "pareto": [

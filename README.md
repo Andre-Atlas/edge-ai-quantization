@@ -13,7 +13,7 @@ Repositório de pesquisa para um artigo científico sobre **Edge AI e quantizaç
 | Como rodar o pipeline e o incidente de memória de 22/10 | [`experimentos/README.md`](experimentos/README.md) |
 | A vertente, a lacuna e as hipóteses em linguagem simples | [`metodologia/vertente.md`](metodologia/vertente.md) |
 
-## Estado (25/10/2026)
+## Estado (26/10/2026)
 
 | Etapa | Estado |
 |---|---|
@@ -21,12 +21,12 @@ Repositório de pesquisa para um artigo científico sobre **Edge AI e quantizaç
 | 1. Protocolo | ✅ v1 e v2 |
 | 2. Pipeline robusto | ✅ (ampliado na etapa 4) |
 | 3. llama.cpp (K-quants) | ✅ qualidade e velocidade dos 5 modelos |
-| 4. Matriz completa | 🟡 59/72 jobs de qualidade válidos (8 a rodar); velocidade concluída (26/10) |
+| 4. Matriz completa | ✅ execução concluída em 26/10 (59 válidos, 9 inválidos por NaN; velocidade medida); faltam o tempo do fp e o encerramento |
 | 5. Análise das hipóteses | 🟡 código pronto; H4 corroborada (provisória); H1–H3 inconclusivas |
 | 6. Painel (GitHub Pages) | 🟡 publicado com o piloto; atualizar ao fechar a etapa 4 |
 | 7. Literatura e redação | 🟡 rodada 2 feita; fichas e redação pendentes |
 
-Achado principal até aqui: o GPTQ do mlx-lm 0.32.2 produz modelos inválidos (perplexidade NaN) em 3 dos 5 modelos, por arredondamento em bf16 da Hessiana; detalhes em `protocolo-v2.md`, seção 4.
+Achado principal até aqui: o GPTQ do mlx-lm 0.32.2 produz modelos inválidos (perplexidade NaN) em todos os modelos de 3–4B e larguras testadas, por arredondamento em bf16 da Hessiana; detalhes em `protocolo-v2.md`, seção 4.
 
 ## Estrutura
 
