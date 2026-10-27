@@ -2,6 +2,7 @@
 
   python experimentos/matriz.py --fase qualidade --workers 3 [--somente Qwen/Qwen3-0.6B] [--metodos rtn,awq] [--simular]
   python experimentos/matriz.py --fase velocidade          # sempre 1 job por vez, maquina ociosa
+  python experimentos/matriz.py --fase qualidade --config matriz-v3.json   # extensao pre-registrada da v3
 
 Fase qualidade: quantiza + PPL + lm-eval, em paralelo, com guarda de memoria (soma das estimativas
 <= memoria_total_gb). Fase velocidade: tok/s e pico de memoria, em serie e SEM outros jobs, porque
@@ -24,6 +25,8 @@ LOGS = RAIZ / "logs"
 
 
 def jobs(cfg, somente=None, metodos=None):
+    if "grades" in cfg:
+        return jobs_grades(cfg, somente, metodos)
     lista = []
     for m in cfg["modelos"]:
         if somente and m["id"] not in somente:
@@ -42,6 +45,30 @@ def jobs(cfg, somente=None, metodos=None):
             for met, bits, seed in itertools.product(r["metodos"], r["bits"], r["seeds"]):
                 if not metodos or met in metodos:
                     lista.append(dict(modelo=m["id"], metodo=met, bits=bits, grupo=cfg["grupo"], seed=seed, fp_gb=m["fp_gb"], arq=m.get("arq")))
+    return [j for j in lista if not excluido(cfg, j)]
+
+
+def jobs_grades(cfg, somente=None, metodos=None):
+    """Grade da v3 (matriz-v3.json): lista de blocos {modelos, fp, metodos: {metodo: {bits, seeds}}}; cada bloco gera so os seus
+    jobs (ex.: GPTQ corrigido nos 5 modelos antigos; grade completa nos 4 novos). Mesmo formato de job da grade da v1/v2."""
+    arq = {m["id"]: m for m in cfg["modelos"]}
+    lista, vistos = [], set()
+    for g in cfg["grades"]:
+        for mid in g["modelos"]:
+            if somente and mid not in somente:
+                continue
+            m = arq[mid]
+            novos = [dict(modelo=mid, metodo="fp", bits=16, grupo="", seed=0)] if g.get("fp") else []
+            for met, spec in g["metodos"].items():
+                if metodos and met not in metodos:
+                    continue
+                for bits, seed in itertools.product(spec["bits"], spec["seeds"]):
+                    novos.append(dict(modelo=mid, metodo=met, bits=bits, grupo=cfg["grupo"], seed=seed))
+            for j in novos:
+                k = tuple(j[c] for c in ("modelo", "metodo", "bits", "seed"))
+                if k not in vistos and not (metodos and j["metodo"] == "fp" and "fp" not in metodos):
+                    vistos.add(k)
+                    lista.append({**j, "fp_gb": m["fp_gb"], "arq": m.get("arq")})
     return [j for j in lista if not excluido(cfg, j)]
 
 
@@ -64,6 +91,10 @@ def estimativa_gb(j):
         return pico_fp_rtn_gb(j) + 1.5
     if usa_camada(j):
         return pico_gptq_camada_gb(j)
+    if j["metodo"] == "gptq_fp32":
+        # gptq_camada.py com Hessiana fp32 (v3): o produto x^T x em float32 dobra o temporario do lote; +1 GB sobre o bf16,
+        # NAO calibrado (conferir com o [pico_quant] do 1o job do fim de semana 1)
+        return pico_gptq_camada_gb(j) + 1.0
     if j["metodo"] in ("gptq", "awq"):
         return pico_gptq_awq_gb(j)
     if j["metodo"] == "dwq":
@@ -133,7 +164,7 @@ def necessario_sozinho_gb(j):
     """Memoria livre minima para iniciar o job mesmo sem outros rodando: pesos + logits + 2 GB de folga."""
     if j["metodo"] in ("fp", "rtn"):
         return pico_fp_rtn_gb(j) + 2
-    if j["metodo"] in ("gptq", "awq"):
+    if j["metodo"] in ("gptq", "gptq_fp32", "awq"):
         # jobs maiores que a RAM rodam sozinhos com swap (SmolLM3 GPTQ, AWQ 1,7B: sem travar); exigir o pico inteiro livre os
         # bloquearia para sempre. Teto: metade da RAM livre, o que ja funcionou como limiar de partida nos jobs ate hoje.
         return min(estimativa_gb(j) + 2, 0.5 * memoria_total_gb())
@@ -176,8 +207,10 @@ def main():
     ap.add_argument("--somente", nargs="*")
     ap.add_argument("--metodos", type=lambda s: s.split(","))
     ap.add_argument("--simular", action="store_true", help="apenas lista o que seria executado")
+    ap.add_argument("--config", default="matriz.json", help="matriz.json (grade v1/v2) ou matriz-v3.json (extensao da v3)")
+    ap.add_argument("--ate", help="'AAAA-MM-DD HH:MM': nao inicia job novo depois deste horario (janela de fim de semana da v3)")
     a = ap.parse_args()
-    cfg = json.load(open(RAIZ / "matriz.json"))
+    cfg = json.load(open(RAIZ / a.config))
     fila = [j for j in jobs(cfg, a.somente, a.metodos) if pendente(j, a.fase)]
     if a.fase == "velocidade":
         a.workers = 1
@@ -221,6 +254,10 @@ def main():
             continue
         # alem do orcamento, so inicia outro job em paralelo se a memoria livre real comportar + 6 GB
         # de folga para o macOS (WindowServer tambem usa a GPU)
+        if fila and a.ate and time.strftime("%Y-%m-%d %H:%M") >= a.ate:
+            print(f"[janela encerrada] {len(fila)} job(s) ficam para a proxima janela (limite {a.ate})", flush=True)
+            fila.clear()
+            continue
         while fila and len(rodando) < a.workers and (not rodando or (usado + estimativa_gb(fila[0]) <= limite
                                                                       and memoria_livre_gb() >= estimativa_gb(fila[0]) + 6)):
             j = fila.pop(0)

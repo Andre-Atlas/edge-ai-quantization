@@ -287,3 +287,52 @@ Backups (`experimentos/resultados/backups/`):
 - `resultados.csv.antes-de-invalidar-gptq-llama-qwen4b` — `f7a976b37047`
 - `resultados.csv.antes-de-invalidar-gptq-smollm3` — `4670be8bab76`
 - `resultados.csv.em-25-10-17h` — `7a2c36b5344f`
+
+## 9. Protocolo v3: alterações para a extensão pré-registrada (26/10/2026, noite)
+
+Motivo e regras: `metodologia/protocolo-v3.md`. Nada da v2 foi alterado nos dados nem nas regras; as mudanças só acrescentam.
+
+- **`gptq_camada.py`:** nova função `empacotar(w, bits, scales, biases)`.
+  - Os inteiros são os mesmos do `quantize` do mlx-lm. O empacotamento é um fluxo contíguo de bits em palavras uint32 (o elemento i ocupa os bits [i·b, (i+1)·b)), que é o formato do `mx.quantize` e vale também para 3 e 6 bits.
+  - 2, 4 e 8 bits continuam usando o `quantize` do mlx-lm (caminho validado na v2); 3 bits usa `empacotar()`.
+  - **Validação (`testes_v3.py`):** com inteiros sem arredondamento, os bits são idênticos aos do `mx.quantize` em 2, 3, 4, 6 e 8 bits. Com valores reais, o resultado é idêntico ao mlx-lm em 2, 4 e 8 bits e difere do `mx.quantize` só em empates de arredondamento (≤ 0,002% das palavras).
+- **`rodar.py`:** método `gptq_fp32`, que chama `gptq_camada.py --hessiana fp32` em qualquer largura com `impl` = "gptq_camada.py (Hessiana fp32, v3)". Ele tem nome próprio no CSV para não sobrescrever as linhas do GPTQ padrão.
+- **`matriz.py`:**
+  - `--config` (padrão `matriz.json`; a v3 usa `matriz-v3.json`).
+  - Grades por bloco (`jobs_grades`).
+  - `--ate 'AAAA-MM-DD HH:MM'`: nenhum job novo começa depois desse horário.
+  - Estimativa do `gptq_fp32` = a do `gptq_camada` + 1 GB, **não calibrada**. Ela é conferida com o `[pico_quant]` do primeiro job.
+- **`matriz-v3.json`:** 52 jobs, em seis blocos:
+  1. GPTQ-fp32 a 4 e 3 bits nos 5 modelos da v2 (o Qwen3-0,6B primeiro, como validação);
+  2. Qwen2.5-0.5B;
+  3. Llama-3.2-1B;
+  4. Qwen2.5-1.5B;
+  5. Qwen2.5-3B;
+  6. réplicas de AWQ.
+  - Dimensões lidas dos `config.json`: Qwen2.5-0.5B (d 896, i 4864, n 24), 1.5B (1536, 8960, 28) e 3B (2048, 11008, 36). Os três sem janela deslizante e com embedding amarrado.
+  - O Llama-3.2-1B usa as dimensões do model card, a conferir depois do download (acesso pendente).
+- **`analise_v3.py`:** regras da seção 3 da v3, com saída em `hipoteses-v3.json`.
+  - As regras de decisão são funções puras, testadas em `testes_v3.py` (23 casos, incluindo cenários de ponta a ponta com NLL sintética).
+  - Usa a mesma matriz de reamostragem para todo vetor com o mesmo número de janelas, o que pareia métodos e tamanhos da família.
+- **`rodar_fim_de_semana.sh`** (job semanal `com.edgeai.v3-fds`, sexta 18:00):
+  - roda só na janela de sexta 18h a segunda 22h;
+  - faz a validação uma única vez;
+  - só põe na fila modelos já baixados;
+  - roda o `conferir_nan.py`;
+  - confere a integridade das linhas que já existiam;
+  - remove o próprio agendamento quando a grade termina.
+
+Checksums no commit da tag `protocolo-v3`:
+
+| Arquivo | Linhas | SHA-256 |
+|---|---|---|
+| `experimentos/gptq_camada.py` | 221 | `ce4846206179` |
+| `experimentos/rodar.py` | 234 | `ac50b2973419` |
+| `experimentos/matriz.py` | 273 | `c8cb4809b0e0` |
+| `experimentos/matriz-v3.json` | 332 | `d4b6ff5a2803` |
+| `experimentos/analise_v3.py` | 236 | `b46dcdaf1f01` |
+| `experimentos/testes_v3.py` | 124 | `c3c850961f71` |
+| `experimentos/rodar_fim_de_semana.sh` | 116 | `9d704c0b0b43` |
+| `experimentos/conferir_nan.py` | 27 | `bdc0a2a42927` |
+| `experimentos/avaliar.py` | 145 | `f781996f9a85` |
+| `metodologia/protocolo-v3.md` | 140 | `dc67133d9443` |

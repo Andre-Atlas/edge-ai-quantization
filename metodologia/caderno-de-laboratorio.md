@@ -173,6 +173,37 @@
 3. **Grade final da qualidade:** **68 jobs executados** (a grade de 72 menos 4 do DWQ × SmolLM3 excluídos, D24): **59 válidos**, **9 inválidos** (GPTQ NaN), 0 pendentes. Vereditos provisórios inalterados: H1 inconclusiva, H2 inconclusiva, H3 inconclusiva sem o SmolLM3 (refutada com ele), H4 corroborada. `analise.py` regravou `hipoteses.json` — é **provisório**, e o final sai só após as lacunas da etapa 5.
 4. **Etapa 4 encerrada na parte de execução.** Restam: repetir o tempo do `Qwen3-0.6B-fp`, desligar o `com.edgeai.etapa4`, arquivar logs e fechar a documentação.
 
+### Fase 23 — Protocolo v3: extensão pré-registrada para tornar H1–H3 decidíveis (26/10, 21:45–23:00)
+1. **Pergunta do usuário:** o que fazer para que as outras hipóteses tenham resultado conclusivo, seja ele corroboração ou refutação?
+2. **Diagnóstico (raciocínio):** com os dados da v2, nenhum dado ainda possível muda H1, H2 ou H3.
+   - **H1:** 2 sucessos e 2 "nenhum ciente" fixos; a corroboração exige 4 de 4 e a refutação exige 3.
+   - **H2:** só 2 células, então 50% é inconclusivo por construção.
+   - **H3:** a 2ª metade tem 2 modelos avaliáveis.
+   - Mudar as regras olhando os dados seria ajuste pós-hoc. Daí a decisão por uma **v3 pré-registrada**, com dados novos e regras decidíveis.
+3. **Decisões do usuário (D25):**
+   - **Frentes escolhidas:** novos modelos, GPTQ corrigido (fp32) e regras mais precisas. A reanálise secundária dos dados da v2 não foi escolhida.
+   - **Restrições:** execuções só de sexta 18h a segunda (dia inteiro); artigo até **18/12/2026**.
+4. **O que foi feito (dias úteis, sem execução de modelo):**
+   - `protocolo-v3.md` escrito.
+   - `empacotar()` de 3 bits no `gptq_camada.py`, conferido bit a bit.
+   - Método `gptq_fp32` no `rodar.py`.
+   - `--config`, grades por bloco e `--ate` no `matriz.py`.
+   - `matriz-v3.json` com 52 jobs.
+   - `analise_v3.py` e `testes_v3.py`: 23 de 23 aprovados. Os testes acharam 2 problemas, os dois corrigidos antes do commit:
+     - um erro nos dados sintéticos de teste;
+     - empates de arredondamento no 6 bits do `mx.quantize`. Daí o teste de formato com inteiros, separado do teste com valores reais.
+   - `rodar_fim_de_semana.sh` e o job semanal.
+   - Download dos Qwen2.5 0.5B, 1.5B e 3B (12 GB).
+   - O **Llama-3.2-1B depende de acesso**, pedido pelo usuário na página do Hugging Face. Enquanto não houver acesso, o orquestrador o pula.
+5. **Alternativas descartadas:**
+   - **Limiares proporcionais aplicados aos dados da v2:** seria pós-hoc.
+   - **Gemma-3-1B:** tem janela deslizante, que o `gptq_camada.py` não suporta.
+   - **Proibir o EOS** na medida de velocidade: não se aplica aqui.
+   - **8 bits na v3:** não entra em nenhuma hipótese e custaria ~25% a mais de tempo de máquina.
+5b. **Teste do `analise_v3.py` nos dados da v2, antes da tag:** só para conferir o funcionamento. Foi declarado no protocolo-v3, seção 3, "Amostra e transparência". Resultado: σ_cal = 0,0065; H1 com 1/2/1 entre 4 avaliáveis; H2 com 1 de 4 células válidas; 1ª metade da H3 superlinear em 5 de 5. Tudo "não avaliável" por N insuficiente. Nenhuma regra foi mudada depois disso.
+6. **Tag `protocolo-v3`** criada neste commit, **antes** de qualquer execução da extensão. A 1ª janela é 30/10, 18h.
+7. **Job diário `com.edgeai.etapa4` desligado:** estava pendente desde a etapa 4; o plist foi renomeado para `.desativado`.
+
 ## 1A. Raciocínio por trás de cada ação
 
 > Para cada ação: **por que** foi feita, e qual **alternativa** foi descartada e por quê. O raciocínio é o que foi apresentado ao usuário **no momento** da ação (conversa da sessão), não uma justificativa reconstruída depois; onde houve reconstrução, está marcado *(reconstruído)*. Princípios que se repetem: (P1) **não mudar o método depois de ver resultados** (pré-registro, Popper); (P2) **segurança da máquina antes de completar uma medição** (incidente de 22/10); (P3) **preservar o dado bruto** e excluir da análise só por regra explícita; (P4) **medir antes de decidir** quando a decisão depende de um número; (P5) **decisões que mudam o estudo são do usuário**; o Assistente propõe, com alternativas.

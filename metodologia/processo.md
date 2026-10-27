@@ -90,6 +90,18 @@
   6. Repetir o tempo do `Qwen3-0.6B-fp` (8 h 53; hipótese de swap; protocolo-v2, 7 C).
   7. Desligar o agendamento `launchd` (`com.edgeai.etapa4`), que continua carregado e tenta disparar todo dia à meia-noite (um marcador impede a repetição).
 
+### Etapa 4b — 🟡 (extensão pré-registrada, protocolo v3)
+- **Feito (26/10):**
+  - protocolo v3 (tag `protocolo-v3`);
+  - código (GPTQ-fp32 com 3 bits, grade v3 com 52 jobs, `analise_v3.py`, testes 23/23);
+  - download dos Qwen2.5;
+  - agendamento semanal (sexta 18h a segunda 22h).
+- **Falta:**
+  - **Fim de semana 1 (30/10–02/11):** validação, GPTQ-fp32 dos 5 modelos da v2, Qwen2.5-0.5B e Llama-3.2-1B (se o acesso sair).
+  - **Fim de semana 2 (06–09/11):** os demais.
+  - **13–16/11:** reserva. Dados congelados em 16/11.
+  - Depois: `analise_v3.py` → `hipoteses-v3.json`.
+
 ### Etapa 5 — 🟡
 - Feito: `analise.py` com os critérios da v1 (22/10) e as regras da v2 (25/10), sensibilidade ao SmolLM3, testes sintéticos dos ramos; `analise_h3_nll.py` (análise secundária). Vereditos **provisórios** (25/10, ~17h, sem gravar `hipoteses.json`): H1 **inconclusiva** (critério atendido em 2 dos 4 modelos contados: Qwen3-1,7B e Llama; depois da correção que trata o job inválido como definitivo); H2 inconclusiva (1 de 2 células); H3 inconclusiva sem o SmolLM3 e refutada com ele; **H4 corroborada** (E = 0,85–0,88 nos modelos de 3–4B).
 - Falta (lacunas apontadas em 22/10 e ainda abertas): (a) a acurácia (métrica secundária `Q_acc`) não entra nos vereditos nem como checagem de concordância; (b) as réplicas de AWQ não entram na análise (variância entre sementes calculada só no caderno); (c) o bootstrap mede só a incerteza do texto de avaliação, não a da calibração. Gerar `hipoteses.json` final quando a etapa 4 fechar.

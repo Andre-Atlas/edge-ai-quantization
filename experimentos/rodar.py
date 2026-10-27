@@ -105,6 +105,12 @@ def quantizar(modelo, metodo, bits, grupo, seed, destino):
         # mas uma camada por vez (pico 3-4x menor). Ativado por EAQ_GPTQ_CAMADA=1; ver protocolo-v2.
         cmd = [PY, str(RAIZ / "gptq_camada.py"), "--model", modelo, "--mlx-path", d, "--bits", str(bits),
                "--group-size", str(grupo), "--seed", str(seed), "--hessiana", "bf16"]
+    elif metodo == "gptq_fp32":
+        # GPTQ corrigido (protocolo-v3, secao 2): o mesmo gptq_camada.py com a Hessiana em float32 (evita o NaN do bf16 nos
+        # modelos de 3-4B) e com 3 bits (empacotamento proprio, identico ao formato do mx.quantize). Metodo proprio da v3,
+        # com nome proprio no CSV para nao sobrescrever as linhas do GPTQ padrao (v2).
+        cmd = [PY, str(RAIZ / "gptq_camada.py"), "--model", modelo, "--mlx-path", d, "--bits", str(bits),
+               "--group-size", str(grupo), "--seed", str(seed), "--hessiana", "fp32"]
     elif metodo == "awq" and awq_liberar():
         # mesmo AWQ do mlx-lm (704/704 tensores identicos e NLL identica em Qwen3-0,6B e 1,7B), mas liberando a memoria ao fim de
         # cada bloco (pico 3x menor). Ativado por EAQ_AWQ_LIBERAR=1 ou --awq-liberar; ver protocolo-v2.
@@ -159,7 +165,7 @@ def arredondar(d):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--modelo", required=True)
-    ap.add_argument("--metodo", required=True, choices=["fp", "rtn", "gptq", "awq", "dwq"])
+    ap.add_argument("--metodo", required=True, choices=["fp", "rtn", "gptq", "gptq_fp32", "awq", "dwq"])
     ap.add_argument("--bits", type=int, default=4)
     ap.add_argument("--grupo", type=int, default=64)
     ap.add_argument("--seed", type=int, default=0)
@@ -180,7 +186,7 @@ def main():
 
     bits = 16 if a.metodo == "fp" else a.bits
     grupo = "" if a.metodo == "fp" else a.grupo
-    seed = a.seed if a.metodo in ("gptq", "awq", "dwq") else 0  # RTN e FP sao deterministicos
+    seed = a.seed if a.metodo in ("gptq", "gptq_fp32", "awq", "dwq") else 0  # RTN e FP sao deterministicos
     chave = dict(modelo=a.modelo, metodo=a.metodo, bits=bits, grupo=grupo, seed=seed)
     ident = identificador(a.modelo, a.metodo, bits, grupo, seed)
     destino = MODELOS / ident
@@ -188,6 +194,8 @@ def main():
                 mlx_lm=md.version("mlx-lm"), mlx=md.version("mlx"), python=platform.python_version())
     if a.metodo == "gptq" and gptq_camada():
         base["impl"] = "gptq_camada.py (Hessiana bf16, identico ao mlx-lm)"   # coluna extra: rastreia a implementacao usada
+    if a.metodo == "gptq_fp32":
+        base["impl"] = "gptq_camada.py (Hessiana fp32, v3)"
     if a.metodo == "awq" and awq_liberar():
         base["impl"] = "awq_liberar.py (gc por bloco, identico ao mlx-lm)"
 

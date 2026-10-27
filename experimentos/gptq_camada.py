@@ -12,7 +12,10 @@ grupo) e copiado do mlx-lm sem alteracoes. A semente, os dados de calibracao (ca
 o lote de 8 e as camadas de reserva (embedding a 6 bits, grupo 64) tambem sao os mesmos.
 
 --hessiana bf16 (padrao): reproduz o Catcher do mlx-lm (produto x^T x em bf16, somado em float32) -> VALIDACAO contra o padrao.
---hessiana fp32: calcula o produto em float32 -> desvio A do protocolo-v2; evita o NaN do SmolLM3.
+--hessiana fp32: calcula o produto em float32 -> desvio A do protocolo-v2; evita o NaN do SmolLM3. Na v3 e o metodo
+"GPTQ corrigido" (protocolo-v3, secao 2).
+--bits 3 (v3): o empacotamento do mlx-lm so aceita 2, 4 e 8 bits; para 3 bits usa-se empacotar() (fluxo de bits contiguo,
+identico ao formato do mx.quantize: conferido bit a bit em matrizes aleatorias). 2, 4 e 8 bits continuam no do mlx-lm.
 Apenas modelos sem janela deslizante (os cinco do estudo). Trava de seguranca: aborta se a memoria disponivel < --piso-gb.
 """
 import argparse
@@ -22,6 +25,7 @@ import time
 
 import mlx.core as mx
 import mlx.nn as nn
+import numpy as np
 import psutil
 from mlx.utils import tree_flatten, tree_unflatten
 from mlx_lm.models.base import create_attention_mask
@@ -50,6 +54,20 @@ class Captura(nn.Module):
             xf = xf.astype(mx.float32)
         self.H = self.H + xf.T @ xf
         return self.modulo(x, *args, **kwargs)
+
+
+def empacotar(w, bits, scales, biases):
+    """Mesmos inteiros do quantize do mlx-lm, empacotados como no mx.quantize: o elemento i ocupa os bits [i*bits, (i+1)*bits)
+    de um fluxo contiguo de palavras uint32 (vale para 3 e 6 bits, que nao dividem 32)."""
+    n_bins = 2**bits - 1
+    w = mx.unflatten(w, -1, (scales.shape[-1], -1))
+    q = mx.clip(mx.round((w - biases[..., None]) / scales[..., None]), 0.0, n_bins).astype(mx.uint32).flatten(-2, -1)
+    qn = np.array(q)
+    fluxo = ((qn[..., :, None] >> np.arange(bits, dtype=np.uint32)) & 1).astype(np.uint8).reshape(*qn.shape[:-1], -1, 32)
+    out = np.zeros(fluxo.shape[:-1], dtype=np.uint32)
+    for j in range(32):
+        out |= fluxo[..., j].astype(np.uint32) << np.uint32(j)
+    return mx.array(out)
 
 
 def inversa_da_hessiana(H):
@@ -102,7 +120,7 @@ def quantizar_linear(lin, H, bits, group_size, erro):
         W[..., j:] -= err @ Hinv[i:j, j:]
     scales = mx.concatenate(all_scales, axis=-1)
     biases = mx.concatenate(all_biases, axis=-1)
-    Wq = quantize(W, bits, scales, biases)
+    Wq = quantize(W, bits, scales, biases) if bits in (2, 4, 8) else empacotar(W, bits, scales, biases)
     camada = lin.to_quantized(bits=bits, group_size=group_size)
     camada.weight = Wq
     camada.scales = scales
