@@ -202,6 +202,7 @@
    - **8 bits na v3:** não entra em nenhuma hipótese e custaria ~25% a mais de tempo de máquina.
 5b. **Teste do `analise_v3.py` nos dados da v2, antes da tag:** só para conferir o funcionamento. Foi declarado no protocolo-v3, seção 3, "Amostra e transparência". Resultado: σ_cal = 0,0065; H1 com 1/2/1 entre 4 avaliáveis; H2 com 1 de 4 células válidas; 1ª metade da H3 superlinear em 5 de 5. Tudo "não avaliável" por N insuficiente. Nenhuma regra foi mudada depois disso.
 6. **Tag `protocolo-v3`** criada neste commit, **antes** de qualquer execução da extensão. A 1ª janela é 30/10, 18h.
+6b. **Llama-3.2-1B baixado (26/10, depois da tag):** o usuário já tinha acesso. O `config.json` confirma as dimensões da `matriz-v3.json`: d 2048, i 8192, n 16, o_in 2048, embedding amarrado, 2,47 GB. O `matriz-v3.json` não precisou mudar (a nota "a conferir" fica como registro). Os 4 modelos novos estão baixados e entram na fila do fim de semana 1.
 7. **Job diário `com.edgeai.etapa4` desligado:** estava pendente desde a etapa 4; o plist foi renomeado para `.desativado`.
 
 ## 1A. Raciocínio por trás de cada ação
@@ -440,7 +441,7 @@ A ordem dos e-mails 1 e 2 na noite de 24/10 não foi registrada com horário.
 2. DWQ: repetir o diagnóstico até salvar o modelo, com o cache do MLX limitado; comparar a qualidade com o DWQ padrão.
 3. ~~Fase de velocidade (H4)~~ — concluída em 26/10 (Fases 17–18): H4 corroborada (provisória); resta, se quiser, **repetir com o app Claude fechado** para eliminar a ressalva de contaminação (20 min).
 4. Repetir o tempo do `Qwen3-0,6B-fp` (8 h 53) para confirmar a hipótese do swap (script não agendado).
-5. Desligar o agendamento `launchd` `com.edgeai.etapa4` (continua carregado; um marcador impede a repetição).
+5. ~~Desligar o agendamento `launchd` `com.edgeai.etapa4`~~ — desligado em 26/10 (Fase 23).
 6. ~~Consolidar `protocolo-v2`; restaurar `protocolo.md` à tag; commit e tag `protocolo-v2`~~ — feito em 25/10 (Fase 14).
 7. ~~Colocar `resultados.csv` sob controle de versão~~ — feito em 25/10 (Fase 14); as logs continuam fora do git (`.gitignore`) e devem ser arquivadas à parte.
 
