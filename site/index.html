@@ -21,10 +21,27 @@
 <main class="wrap">
   <section class="hero">
     <h1>Quantização pós-treino de LLMs pequenos, no dispositivo</h1>
-    <p class="lede">Estudo experimental comparando RTN, GPTQ, AWQ e DWQ (mlx-lm) e K-quants (llama.cpp) em modelos de 0,6 a 4 bilhões de parâmetros, num MacBook Pro M5 Pro com 24&nbsp;GB de memória unificada.</p>
+    <p class="lede">Estudo experimental comparando RTN, GPTQ, AWQ e DWQ (mlx-lm) e K-quants (llama.cpp) em modelos de 0,6 a 4 bilhões de parâmetros (cinco na matriz v2; quatro a mais previstos na extensão v3), num MacBook Pro M5 Pro com 24&nbsp;GB de memória unificada.</p>
     <div class="aviso" role="note">
-      <strong id="aviso-titulo">Dados de piloto.</strong> <span id="aviso-texto">Os números abaixo vêm de <em>uma única execução</em> por configuração, só do Qwen3-0.6B, sem benchmarks de tarefas. Servem para validar o pipeline, não para conclusões.</span> <span id="meta-dados"></span>
+      <strong id="aviso-titulo">Dados da matriz.</strong> <span id="aviso-texto">Os números abaixo vêm de <em>uma única execução</em> por configuração, só do Qwen3-0.6B, sem benchmarks de tarefas. Servem para validar o pipeline, não para conclusões.</span> <span id="meta-dados"></span>
     </div>
+  </section>
+
+  <section id="estado">
+    <h2>Estado do estudo</h2>
+    <p>Atualizado em 9/11/2026. O estudo é pré-registrado: cada versão das regras de decisão foi fixada em commit e tag <em>antes</em> de rodar o que ela cobre.</p>
+    <table class="est">
+      <thead><tr><th>Etapa</th><th>Situação</th></tr></thead>
+      <tbody>
+        <tr><td>Protocolos v1 e v2</td><td>Congelados (tags <code>protocolo-v1</code>, <code>protocolo-v2</code>).</td></tr>
+        <tr><td>Matriz de quantização v2</td><td>Fechada em 26/10: 68 configurações, 59 válidas e 9 inválidas (GPTQ padrão do mlx-lm 0.32.2 dá perplexidade NaN nos modelos de 3–4B; causa: Hessiana acumulada em bf16).</td></tr>
+        <tr><td>Velocidade (H4)</td><td>Duas rodadas, a segunda com o app fechado: <strong>H4 corroborada</strong> (E ≈ 0,83–0,87 nos três modelos de 3–4B).</td></tr>
+        <tr><td>H1, H2, H3</td><td><strong>Inconclusivas</strong> por desenho da v2 (poucos modelos avaliáveis). Os vereditos da v2 não serão alterados.</td></tr>
+        <tr><td>Extensão v3 (4b)</td><td>Pré-registrada (tag <code>protocolo-v3</code>): GPTQ com Hessiana em fp32 (inclui 3 bits), Qwen2.5-0,5B/1,5B/3B e Llama-3.2-1B, regras em proporção. <strong>Pausada em 8/11</strong> a pedido; 1 de 52 configurações concluída (GPTQ-fp32 4 bits no Qwen3-0,6B). Em 30/10 o Mac na bateria entrou em repouso e a fila não avançou.</td></tr>
+        <tr><td>Redação</td><td>Meta: artigo até 18/12/2026.</td></tr>
+      </tbody>
+    </table>
+    <p class="nota">Documentação completa no repositório: <a href="https://github.com/Andre-Atlas/edge-ai-quantization/blob/main/metodologia/processo.md">processo</a>, <a href="https://github.com/Andre-Atlas/edge-ai-quantization/blob/main/metodologia/caderno-de-laboratorio.md">caderno de laboratório</a>, <a href="https://github.com/Andre-Atlas/edge-ai-quantization/blob/main/metodologia/protocolo-v3.md">protocolo v3</a>.</p>
   </section>
 
   <section id="contexto">
@@ -61,7 +78,7 @@
     </dl>
 
     <h3>Hipóteses falseáveis e critério de refutação</h3>
-    <p>Seguindo Popper, cada hipótese diz de antemão o que a refutaria. Os limiares são <strong>provisórios</strong> e serão congelados em commit datado antes da rodada final.</p>
+    <p>Seguindo Popper, cada hipótese diz de antemão o que a refutaria. Os limiares abaixo são os da v1; a v2 e a v3 os ajustaram de forma pré-registrada (ver protocolos no repositório).</p>
     <div id="hip-resumo" class="grade2"></div>
   </section>
 
@@ -103,7 +120,7 @@
 
   <section id="hipoteses">
     <h2>4 · Hipóteses</h2>
-    <p>Veredito de cada hipótese, quando houver dados suficientes. Enquanto o piloto cobrir um só modelo e um só bit-width, nenhuma delas pode ser avaliada.</p>
+    <p>Veredito de cada hipótese, quando houver dados suficientes. Os cartões mostram os vereditos provisórios da v2 (<code>hipoteses.json</code>); a v3 foi desenhada para torná-los decidíveis.</p>
     <div id="hip-cartoes" class="grade2"></div>
   </section>
 

@@ -6,6 +6,7 @@ const METODOS = {
   rtn:  {nome:"RTN",       cor:"--m-rtn",  forma:"circulo"},
   gptq: {nome:"GPTQ",      cor:"--m-gptq", forma:"triangulo"},
   awq:  {nome:"AWQ",       cor:"--m-awq",  forma:"losango"},
+  gptq_fp32:{nome:"GPTQ-fp32 (v3)", cor:"--m-gptq32", forma:"triangulo"},
   dwq:  {nome:"DWQ",       cor:"--m-dwq",  forma:"cruz"},
   kquant:{nome:"K-quants", cor:"--m-kq",   forma:"estrela"},
 };
@@ -350,8 +351,8 @@ function versoes() {
   const datas = [...new Set(DADOS.linhas.map(r=>r.data).filter(Boolean))].sort();
   $("#meta-dados").textContent = `${DADOS.n_linhas} linhas, ${datas.join(" – ")}.`;
   if (DADOS.fonte === "matriz") {
-    $("#aviso-titulo").textContent = "Matriz do protocolo-v1 (em andamento).";
-    $("#aviso-texto").textContent = "Uma semente por configuração (réplicas do AWQ em 4 bits estimam a variância). Resultados parciais enquanto a matriz roda; vereditos só com os dados completos.";
+    $("#aviso-titulo").textContent = "Matriz de quantização v2 concluída; extensão v3 pausada.";
+    $("#aviso-texto").textContent = "Uma semente por configuração (réplicas do AWQ em 4 bits estimam a variância). A grade da v2 está fechada (59 configurações válidas e 9 inválidas por NaN no GPTQ padrão); H4 corroborada, H1–H3 inconclusivas. A extensão pré-registrada v3 (novos modelos e GPTQ com Hessiana em fp32) começou e está pausada: só duas linhas dela existem até agora.";
     $("#nota-resultados").textContent = "Q = PPL fp / PPL quantizado (WikiText-2). K-quants: razão contra o F16 do próprio llama.cpp (janelamento diferente do MLX).";
   }
 }

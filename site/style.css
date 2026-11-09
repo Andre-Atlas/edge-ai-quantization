@@ -2,21 +2,21 @@
   color-scheme:light;
   --bg:#fcfcfb;--surface:#ffffff;--ink:#0b0b0b;--ink2:#52514e;--muted:#6f6e69;--line:#e4e3de;--grid:#eceae5;
   --accent:#2a78d6;--warn-bg:#fff4d6;--warn-line:#c98500;
-  --m-fp:#6f6e69;--m-rtn:#2a78d6;--m-gptq:#eb6834;--m-awq:#1baf7a;--m-dwq:#e87ba4;--m-kq:#6250d6;--m-outro:#8a8984;
+  --m-fp:#6f6e69;--m-rtn:#2a78d6;--m-gptq:#eb6834;--m-awq:#1baf7a;--m-dwq:#e87ba4;--m-kq:#6250d6;--m-gptq32:#b8860b;--m-outro:#8a8984;
   --ok:#0a7a3d;--bad:#c0312f;--wait:#6f6e69;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   color-scheme:dark;
   --bg:#1a1a19;--surface:#222220;--ink:#f0efec;--ink2:#c3c2b7;--muted:#a09f96;--line:#3a3935;--grid:#2e2d2a;
   --accent:#3987e5;--warn-bg:#3a2f12;--warn-line:#c98500;
-  --m-fp:#a09f96;--m-rtn:#3987e5;--m-gptq:#d95926;--m-awq:#199e70;--m-dwq:#d55181;--m-kq:#9085e9;--m-outro:#8a8984;
+  --m-fp:#a09f96;--m-rtn:#3987e5;--m-gptq:#d95926;--m-awq:#199e70;--m-dwq:#d55181;--m-kq:#9085e9;--m-gptq32:#b8860b;--m-outro:#8a8984;
   --ok:#4cc17f;--bad:#e66767;--wait:#a09f96;
 }}
 :root[data-theme="dark"]{
   color-scheme:dark;
   --bg:#1a1a19;--surface:#222220;--ink:#f0efec;--ink2:#c3c2b7;--muted:#a09f96;--line:#3a3935;--grid:#2e2d2a;
   --accent:#3987e5;--warn-bg:#3a2f12;--warn-line:#c98500;
-  --m-fp:#a09f96;--m-rtn:#3987e5;--m-gptq:#d95926;--m-awq:#199e70;--m-dwq:#d55181;--m-kq:#9085e9;--m-outro:#8a8984;
+  --m-fp:#a09f96;--m-rtn:#3987e5;--m-gptq:#d95926;--m-awq:#199e70;--m-dwq:#d55181;--m-kq:#9085e9;--m-gptq32:#b8860b;--m-outro:#8a8984;
   --ok:#4cc17f;--bad:#e66767;--wait:#a09f96;
 }
 *{box-sizing:border-box}
@@ -90,3 +90,5 @@ th[aria-sort] button::after{content:" ▲"}th[aria-sort="descending"] button::af
 .vazio{color:var(--muted);padding:20px;text-align:center}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 @media(max-width:700px){.topo{position:static}html{scroll-padding-top:8px}}
+
+.est{width:100%;border-collapse:collapse;margin:.5rem 0}.est th,.est td{text-align:left;vertical-align:top;padding:.45rem .6rem;border-bottom:1px solid var(--line)}.est td:first-child{white-space:nowrap;font-weight:600}

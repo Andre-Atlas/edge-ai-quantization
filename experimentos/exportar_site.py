@@ -44,7 +44,8 @@ def main():
     fonte = "matriz" if origem == CSV else "piloto"
     for l in linhas:
         l["fonte"], l["ferramenta"] = fonte, "mlx-lm"
-    linhas = [l for l in linhas if not str(l.get("status") or "").startswith("falhou")]
+    # fora: falhas e quantizacoes ainda sem avaliacao (status "quantizado", sem PPL)
+    linhas = [l for l in linhas if not str(l.get("status") or "").startswith("falhou") and str(l.get("status") or "") != "quantizado"]
 
     # Linha fp mais recente de cada modelo = referência da razão PPL_fp/PPL_q.
     ref = {}
