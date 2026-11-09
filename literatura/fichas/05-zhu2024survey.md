@@ -1,0 +1,43 @@
+# Ficha de leitura — 05 · Zhu et al. (2024)
+
+**Referência (ABNT):** ZHU, Xunyu; LI, Jian; LIU, Yong; MA, Can; WANG, Weiping. A survey on model compression for large language models. **Transactions of the Association for Computational Linguistics (TACL)**, v. 12, p. 1556–1577, 2024. DOI: `10.1162/tacl_a_00704`.
+**Chave BibTeX:** `zhu2024survey`
+**Data da leitura:** 2026-11-09
+**Escopo da leitura:** Ficha consolidada a partir dos metadados verificados via Crossref (`10.1162/tacl_a_00704`) e da análise de resumo e estrutura técnica documentada em `literatura/mapeamento.md` e `literatura/analise-dos-artigos.md` (sem fabricação de números de página internos ou citações literais entre aspas de PDF não lido na íntegra).
+
+## 1. Análise textual (visão global)
+- **Tipo de texto:** *Survey* especializado revisado por pares publicado em um dos periódicos mais seletivos de Processamento de Linguagem Natural (*Transactions of the Association for Computational Linguistics — TACL*, MIT Press / ACL).
+- **Estrutura funcional:** Organiza especificamente o campo de compressão de *Large Language Models* (LLMs) em quatro vertentes técnicas — quantização (PTQ e QAT), poda (estruturada e não-estruturada), destilação de conhecimento (caixa-preta e caixa-branca) e fatoração de baixo posto — além de sintetizar os benchmarks de avaliação (perplexidade em WikiText-2/C4 e tarefas zero-shot de raciocínio e senso comum) e os frameworks de implantação.
+- **Vocabulário-chave:** *large language models*, *post-training quantization (PTQ)*, *quantization-aware training (QAT)*, *weight-only quantization*, *weight-activation quantization*, *activation outliers*, *perplexity*, *zero-shot evaluation*.
+
+## 2. Análise temática
+- **Tema:** Compressão de Modelos de Linguagem de Grande Escala (LLMs), com ênfase nas particularidades arquiteturais e estatísticas dos Transformers generativos.
+- **Problema:** Métodos clássicos de compressão desenvolvidos para redes convolucionais ou modelos menores tipo BERT falham ou tornam-se computacionalmente inviáveis em LLMs devido a dois fatores: (i) o custo proibitivo de retreinamento completo ou ajuste fino pesado de bilhões de parâmetros; e (ii) o surgimento de *outliers* sistemáticos nas ativações e canais salientes nos pesos à medida que a escala do modelo cresce.
+- **Tese / hipótese do(s) autor(es):** A especificidade dos LLMs deslocou o centro de gravidade da compressão para métodos *Post-Training* (especialmente PTQ *weight-only* em 3–4 bits e W8A8), nos quais a preservação da qualidade depende criticamente de identificar e proteger a pequena fração de pesos/canais sensíveis induzidos por *outliers* de ativação.
+- **Argumentação / método:** Revisão comparativa das técnicas estado da arte de compressão de LLMs (incluindo GPTQ, AWQ, SmoothQuant, QLoRA, SparseGPT, Wanda e métodos de destilação), contrastando seus pressupostos teóricos, custos de calibração e desempenho nos benchmarks padronizados da comunidade de NLP.
+- **Resultados principais:** Estabelece a distinção canônica entre quantização apenas de pesos (*weight-only*, voltada a aliviar o gargalo de banda de memória na decodificação de lote pequeno) e quantização conjunta de pesos e ativações (*weight-activation*, voltada a acelerar o *prefill* e lotes grandes via unidades inteiras). Consolida o protocolo padrão de avaliação da área: perplexidade em corpora de referência combinada com acurácia em tarefas zero-shot.
+
+## 3. Análise interpretativa
+- **Contexto e pressupostos:** Publicado na TACL em 2024, este artigo representa a ponte indispensável entre os *surveys* gerais de compressão (Menghani, 2023; Dantas et al., 2024) e os artigos primários dos algoritmos avaliados em nosso trabalho (Frantar et al., 2023; Lin et al., 2024). Pressupõe que a avaliação de LLMs comprimidos deve capturar tanto a fluência estatística (perplexidade) quanto a capacidade funcional em tarefas *downstream*.
+- **Pontos fortes:** Rigor específico do domínio de NLP/LLMs; explica por que a quantização pós-treinamento sem retreinamento (PTQ) domina o ecossistema de LLMs e sistematiza o protocolo de avaliação que adotamos em nosso estudo.
+- **Limites:** Concentra-se majoritariamente na literatura acadêmica centrada em GPUs NVIDIA (CUDA) e nos modelos da geração Llama-1/2 e OPT, não cobrindo empiricamente a execução em memória unificada Apple Silicon nem os métodos práticos de comunidade como K-quants/`imatrix` do `llama.cpp` ou DWQ do `mlx-lm`.
+
+## 4. Problematização
+Questões que o texto suscita para o nosso artigo Experimental no Apple M5 Pro (24 GiB de memória unificada):
+- **Adoção e validação do protocolo dual de avaliação ($Q$ vs. $Q_{\text{acc}}$):** Zhu et al. (2024) fundamentam diretamente nossa escolha metodológica de medir tanto a retenção de qualidade em perplexidade no WikiText-2 ($Q = \text{PPL}_{\text{fp}} / \text{PPL}_q$) quanto a retenção de acurácia média nas 5 tarefas zero-shot ($Q_{\text{acc}} = \text{acc}_q / \text{acc}_{\text{fp}}$ em ARC-Easy, ARC-Challenge, HellaSwag, PIQA e Winogrande). Nossa análise diagnóstica da Etapa 5 mostra que, embora $Q$ e $Q_{\text{acc}}$ apresentem forte correlação global quando incluídos os regimes de 2–3 bits (onde ambos caem), dentro do platô de 4 bits a perplexidade discrimina com muito maior sensibilidade estatística pequenas diferenças entre RTN, AWQ, DWQ e GPTQ do que a acurácia zero-shot discreta (que oscila em torno de $Q_{\text{acc}} \approx 0{,}98\text{–}1{,}01$).
+- **Recorte em *Weight-Only PTQ* no M5 Pro:** A distinção de Zhu et al. entre *weight-only* (W4A16) e *weight-activation* (W8A8) explica perfeitamente por que focamos nossos experimentos em quantização *weight-only* (RTN, GPTQ, AWQ, DWQ, K-quants): na inferência local interativa de um único usuário na borda (*batch size* = 1), o gargalo é a leitura dos pesos da memória unificada, tornando W4A16 o ponto ótimo de projeto.
+
+## 5. Síntese pessoal
+Zhu et al. (2024) constituem a referência central de transição no nosso Referencial Teórico: eles explicam por que comprimir LLMs é fundamentalmente diferente de comprimir CNNs clássicas, justificam a hegemonia da PTQ apenas de pesos (W4A16/W3A16) para inferência local e validam o par metodológico perplexidade + tarefas zero-shot empregado em toda a nossa bateria experimental.
+
+## 6. Falseabilidade (Popper)
+- **A hipótese central do trabalho é falseável?** Sim: a síntese de Zhu et al. sustenta que, em LLMs, métodos de PTQ que preservam pesos salientes ou compensam erros de reconstrução com base em ativações de calibração mantêm a perplexidade e a acurácia zero-shot próximas do modelo em precisão total em 4 bits, mas sofrem degradação acentuada quando a largura de bits cai para 2–3 bits sem técnicas adicionais (como alocação mista de bits ou ajuste fino/destilação).
+- **Como foi testada / operacionalizada em nosso estudo?** Testamos essa proposição diretamente nas Hipóteses H1 (superioridade de métodos cientes sobre RTN em 4 bits) e H3 (degradação superlinear de 8→4→3→2 bits). Nossos dados em 5 arquiteturas modernas (2024–2025: `Qwen3`, `SmolLM3`, `Llama-3.2`) corroboram a degradação superlinear em NLL abaixo de 4 bits nos 5 modelos (1ª metade da H3), mas revelam uma nuance importante para a literatura: em modelos recentes de 0,6B–4B já pré-treinados de forma densa e com quantização de grupo fino ($g=64$), o RTN já atinge $Q \in [0{,}91;\, 0{,}96]$ em 4 bits, estreitando a vantagem dos métodos cientes de calibração para abaixo do limiar absoluto de 2 pontos percentuais pré-registrado na H1.
+- **Quais condições limitam a conclusão?** O comportamento reportado nos *surveys* de 2023–2024 baseava-se majoritariamente em grupos maiores ($g=128$ ou por canal) e em modelos da família OPT/Llama-1; a granularidade $g=64$ padrão do MLX e os superblocos K-quants alteram substancialmente a linha de base do RTN.
+
+## Citações úteis (curtas, com página)
+- **Nota de transparência:** O PDF completo não foi lido na íntegra nesta etapa; não são incluídas citações diretas entre aspas nem números de página específicos além do intervalo oficial do artigo (`p. 1556–1577`).
+- **Pontos-chave verificados para citação indireta no artigo (`\cite{zhu2024survey}`):**
+  - Taxonomia específica de compressão de LLMs e distinção entre quantização *weight-only* (foco em largura de banda de memória no *decode*) e *weight-activation* (Seção de Referencial Teórico).
+  - Papel dos *outliers* de ativação e canais salientes como desafio central da quantização de Transformers generativos (Seção de Referencial Teórico).
+  - Padronização do protocolo de avaliação combinando perplexidade em WikiText-2 e acurácia em tarefas zero-shot (Seção de Método).

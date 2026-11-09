@@ -1,0 +1,42 @@
+# Ficha de leitura — 04 · Lin et al. (2023)
+
+**Referência (ABNT):** LIN, Ji; ZHU, Ligeng; CHEN, Wei-Ming; WANG, Wei-Chen; HAN, Song. Tiny machine learning: progress and futures. **IEEE Circuits and Systems Magazine**, v. 23, n. 3, p. 8–34, 2023. DOI: `10.1109/MCAS.2023.3302182`. *(Preprint: `arXiv:2403.19076`).*
+**Chave BibTeX:** `lin2023tiny`
+**Data da leitura:** 2026-11-09
+**Escopo da leitura:** Ficha consolidada a partir dos metadados verificados via Crossref (`10.1109/MCAS.2023.3302182`) e arXiv API (`2403.19076`), e da análise de resumo e estrutura técnica documentada em `literatura/mapeamento.md` e `literatura/analise-dos-artigos.md` (sem fabricação de números de página internos ou citações literais entre aspas de PDF não lido na íntegra).
+
+## 1. Análise textual (visão global)
+- **Tipo de texto:** Artigo de revisão e visão de futuro (*survey / perspective paper*) publicado na *IEEE Circuits and Systems Magazine* (base IEEE Xplore), assinado pelo grupo do MIT HAN Lab (liderado por Song Han, mesmo grupo autor de MCUNetV2, SmoothQuant e AWQ).
+- **Estrutura funcional:** Traça a evolução do *Tiny Machine Learning* (TinyML) desde a inferência de modelos de visão em microcontroladores (com centenas de kilobytes de SRAM) até o treinamento *on-device* sob restrições severas de memória e a emergência de modelos de linguagem compactos e multimodais na borda, enfatizando o co-projeto entre algoritmo, compilador/motor de inferência e sistema de memória.
+- **Vocabulário-chave:** *TinyML*, *algorithm-system co-design*, *peak memory*, *activation footprint*, *quantization*, *in-place update*, *edge LLMs*, *hardware-aware optimization*.
+
+## 2. Análise temática
+- **Tema:** Progresso histórico, estado da arte e direções futuras do *Tiny Machine Learning* (TinyML) e da execução de modelos profundos em dispositivos de borda altamente restritos.
+- **Problema:** A disparidade de várias ordens de grandeza entre a memória disponível em dispositivos de borda (de kilobytes em MCUs a poucos gigabytes em dispositivos móveis/embarcados) e a demanda de memória de pesos e ativações de redes neurais modernas impede a adoção direta de modelos estado da arte sem reformulação conjunta do algoritmo e do motor de execução.
+- **Tese / hipótese do(s) autor(es):** Superar a barreira de memória na borda exige abandonar o paradigma sequencial tradicional (projetar o modelo primeiro e comprimi-lo depois de forma agnóstica ao sistema) em favor do co-projeto algoritmo–sistema (*algorithm-system co-design*), no qual a quantização, a arquitetura da rede e o escalonamento de memória do *runtime* são projetados conjuntamente para eliminar gargalos de memória de pico e largura de banda.
+- **Argumentação / método:** Síntese dos avanços do grupo e da literatura em três frentes: (i) co-projeto de arquitetura e motor de inferência (série MCUNet); (ii) treinamento eficiente em memória na borda (quantização de ativações/gradientes e atualização esparsa); e (iii) transição do TinyML para a era dos modelos de fundação e LLMs na borda (quantização de 4 bits ciente de ativações e motores dedicados de inferência).
+- **Resultados principais:** Demonstra que reduções teóricas de parâmetros ou FLOPs frequentemente falham em acelerar dispositivos reais se o motor de inferência sofrer com sobrecarga de conversão de tipos, fragmentação de memória de ativações ou desalinhamento SIMD/GPU; aponta a inferência local de LLMs em dispositivos pessoais como a fronteira imediata de expansão dos princípios de TinyML.
+
+## 3. Análise interpretativa
+- **Contexto e pressupostos:** O trabalho sintetiza a filosofia científica do MIT HAN Lab exatamente no momento de inflexão (2023–2024) em que técnicas originalmente concebidas para microcontroladores (controle estrito de memória de pico, eliminação de sobrecarga de runtime, quantização sem perda de canais críticos) migraram para a compressão de LLMs em GPUs de borda e laptops (culminando no AWQ/TinyChat).
+- **Pontos fortes:** Conecta com clareza o extremo inferior da computação de borda (MCUs com KB de SRAM) à borda de alta capacidade (SoCs móveis e laptops com GB de RAM unificada), mostrando que a física do gargalo — memória e movimentação de dados — permanece estruturalmente análoga em ambas as escalas.
+- **Limites:** Por ser um artigo de síntese com forte ênfase na linha de pesquisa dos próprios autores (MCUNet, TinyEngine, SmoothQuant, AWQ), dedica menor espaço a ecossistemas abertos alternativos baseados em CPU/Metal como `llama.cpp` (K-quants) e `mlx-lm` (DWQ).
+
+## 4. Problematização
+Questões que o texto suscita para o nosso artigo Experimental no Apple M5 Pro (24 GiB de memória unificada):
+- **Do TinyML clássico ao "Tiny LLM" em memória unificada (H2 e H4):** Lin et al. (2023) permitem situar nosso espectro experimental de modelos de linguagem pequenos (`Qwen3-0.6B`, `Qwen3-1.7B`, `SmolLM3-3B`, `Llama-3.2-3B` e `Qwen3-4B`) na continuidade histórica do TinyML. Enquanto um modelo de 4B em `bf16` exige ~8 GiB apenas para os pesos (consumindo um terço da memória unificada total de 24 GiB do MacBook Pro M5 Pro, que é compartilhada com o macOS e aplicativos do usuário), sua versão quantizada em 4 bits ocupa ~2,1 GiB (`disk_size_mb` $\approx 2150$ MB) e mantém pico de memória de execução (`peak_mem_gb`) em ~2,3 GiB, viabilizando coexistência fluida no sistema.
+- **Co-projeto algoritmo–runtime (`mlx-lm` vs. `llama.cpp`):** A tese central dos autores sobre co-projeto algoritmo–sistema explica por que nosso estudo avalia não apenas algoritmos abstratos no MLX (RTN, GPTQ, AWQ, DWQ), mas também o ecossistema integrado `llama.cpp` (K-quants com matriz de importância). No Apple Silicon, o desempenho real depende da harmonia entre o formato de bloco (grupo 64 afim no MLX vs. superblocos hierárquicos de 256 pesos no GGUF) e os kernels Metal da GPU.
+
+## 5. Síntese pessoal
+Lin et al. (2023) fornecem a visão de conjunto que une a tradição de *TinyML* (inferência sob restrição severa de memória física) à inferência local contemporânea de *Small Language Models* (SLMs/LLMs de 0,6B a 4B). No manuscrito, o artigo sustenta a motivação prática do problema de pesquisa (executar modelos de linguagem localmente sem depender de nuvem) e a discussão sobre trabalhos futuros envolvendo co-projeto de kernels e quantização de ativações/KV-cache em memória unificada.
+
+## 6. Falseabilidade (Popper)
+- **A hipótese central do trabalho é falseável?** A proposição central de que o ganho real de eficiência na borda depende do acoplamento entre o esquema de quantização e o motor de execução (e não apenas da contagem teórica de bits ou parâmetros) é empiricamente falseável: se dois esquemas de mesma largura nominal de bits (~4,5 bpw) exibirem vazão, pico de memória ou qualidade idênticos independentemente do runtime e do layout de blocos, a tese da relevância crítica do co-projeto algoritmo–sistema seria enfraquecida naquele domínio.
+- **Como foi testada / operacionalizada em nosso estudo?** Comparando lado a lado, no mesmo chip Apple M5 Pro e nos mesmos 5 modelos base, os métodos de 4 bits de grupo uniforme $g=64$ no `mlx-lm` (4,5 bpw efetivos) contra os formatos mistos por tensor do `llama.cpp` (`Q4_K_M`, ~4,8–5,1 bpw efetivos). Observamos diferenças sistemáticas tanto na curva de velocidade de *prefill*/*decode* quanto na resiliência em 2 e 3 bits (`Q2_K` e `Q3_K_M` vs. quantização uniforme de grupo 64 no MLX), corroborando o papel decisivo do co-projeto formato–runtime.
+- **Quais condições limitam a conclusão?** As conclusões obtidas em arquiteturas SoC com memória unificada de alta largura de banda (Apple M5 Pro) não podem ser extrapoladas diretamente para microcontroladores sem MMU/GPU (onde a SRAM estática de poucos kilobytes impõe restrições de pico de ativação por camada muito mais rígidas do que em laptops).
+
+## Citações úteis (curtas, com página)
+- **Nota de transparência:** O PDF completo não foi lido na íntegra nesta etapa; não são incluídas citações diretas entre aspas nem números de página específicos além do intervalo oficial do artigo (`p. 8–34`).
+- **Pontos-chave verificados para citação indireta no artigo (`\cite{lin2023tiny}`):**
+  - Evolução do TinyML rumo à execução local de modelos de fundação e LLMs compactos na borda (Seção de Introdução e Referencial Teórico).
+  - Princípio de co-projeto algoritmo–sistema (*algorithm-system co-design*): a necessidade de alinhar formatos de quantização aos kernels do motor de inferência e à hierarquia de memória física (Seção de Discussão e Trabalhos Futuros).
