@@ -96,7 +96,8 @@
   - código (GPTQ-fp32 com 3 bits, grade v3 com 52 jobs, `analise_v3.py`, testes 23/23);
   - download dos Qwen2.5;
   - agendamento semanal (sexta 18h a segunda 22h).
-- **Falta:**
+- **Executado (30/10–08/11):** validação de regressão 704/704 (duas vezes); GPTQ-fp32 4 bits no Qwen3-0,6B concluído (PPL 22,58); 3 bits quantizado, sem avaliação. **Pausada em 08/11 a pedido do usuário** (job `.plist.pausado`). Incidente de energia em 30/10 (Mac na bateria): ver Fase 24 do caderno. 1 de 52 jobs concluído.
+- **Falta (plano original, hoje atrasado):**
   - **Fim de semana 1 (30/10–02/11):** validação, GPTQ-fp32 dos 5 modelos da v2, Qwen2.5-0.5B e Llama-3.2-1B (se o acesso sair).
   - **Fim de semana 2 (06–09/11):** os demais.
   - **13–16/11:** reserva. Dados congelados em 16/11.
