@@ -10,12 +10,13 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import analise as A2  # noqa: E402
 import analise_v3 as A  # noqa: E402
 
 falhas = []
 
 
-def checar(nome, ok, detalhe=""):
+def checar(nome: str, ok: bool, detalhe: str = "") -> None:
     print(("PASSOU " if ok else "FALHOU ") + nome + (": " + detalhe if detalhe else ""), flush=True)
     if not ok:
         falhas.append(nome)
@@ -119,6 +120,49 @@ for forma in [(64, 128), (300, 2560)]:
             ok &= bool(mx.array_equal(p, q_mlxlm(w, bits, s, b)))
         pior = max(pior, float((np.array(p) != np.array(wq)).mean()))
 checar("empacotar: igual ao mlx-lm (2,4,8) e empates < 0,01% (3,6)", ok and pior < 1e-4, f"pior fracao diferente {pior:.6f}")
+
+# ---------- Etapa 5: concordancia Q x Q_acc e variancia das replicas AWQ (analise.py) ----------
+linhas_sint = [
+    {"modelo": "Qwen/Qwen3-0.6B", "metodo": "fp", "bits": 16, "seed": "0", "ppl_wikitext2": "20.0", "acc_media": "0.50", "Q": 1.0, "Q_acc": 1.0, "ic": (1.0, 1.0)},
+    {"modelo": "Qwen/Qwen3-0.6B", "metodo": "rtn", "bits": 4, "seed": "0", "ppl_wikitext2": "22.0", "acc_media": "0.46", "Q": 20.0 / 22.0, "Q_acc": 0.46 / 0.50, "ic": (0.90, 0.92)},
+    {"modelo": "Qwen/Qwen3-0.6B", "metodo": "awq", "bits": 4, "seed": "0", "ppl_wikitext2": "21.0", "acc_media": "0.49", "Q": 20.0 / 21.0, "Q_acc": 0.49 / 0.50, "ic": (0.94, 0.96)},
+    {"modelo": "Qwen/Qwen3-0.6B", "metodo": "awq", "bits": 4, "seed": "1", "ppl_wikitext2": "20.8", "acc_media": "0.492", "Q": 20.0 / 20.8, "Q_acc": 0.492 / 0.50, "ic": (0.95, 0.97)},
+    {"modelo": "Qwen/Qwen3-0.6B", "metodo": "awq", "bits": 4, "seed": "2", "ppl_wikitext2": "21.2", "acc_media": "0.488", "Q": 20.0 / 21.2, "Q_acc": 0.488 / 0.50, "ic": (0.93, 0.95)},
+    {"modelo": "Qwen/Qwen3-0.6B", "metodo": "dwq", "bits": 4, "seed": "0", "ppl_wikitext2": "20.5", "acc_media": "0.495", "Q": 20.0 / 20.5, "Q_acc": 0.495 / 0.50, "ic": (0.96, 0.98)},
+]
+conc = A2.concordancia_acuracia(linhas_sint, modelos=["Qwen/Qwen3-0.6B"])
+checar("concordancia Q x Q_acc: correlacao positiva e melhor ciente coincide",
+       conc["n_pares"] == 3 and conc["pearson_r"] > 0.95 and conc["spearman_rho"] > 0.95
+       and conc["por_modelo_4b"]["Qwen/Qwen3-0.6B"]["melhor_ciente_coincide"] is True,
+       str(conc))
+rep = A2.variancia_replicas_awq(linhas_sint, modelos=["Qwen/Qwen3-0.6B"])
+checar("replicas AWQ: sigma_cal e CV calculados para 3 sementes",
+       "Qwen/Qwen3-0.6B" in rep["por_modelo"] and 0 < rep["sigma_cal_combinado"] < 0.02
+       and 0 < rep["por_modelo"]["Qwen/Qwen3-0.6B"]["cv_ppl_pct"] < 2.0,
+       str(rep))
+
+# casos de borda numericos: empates em _ranks, variancia nula, divergencia de melhor ciente e artefatos do artigo
+checar("_ranks trata empates simples, multiplos e vetor vazio",
+       np.allclose(A2._ranks([10, 20, 20, 30]), [1.0, 2.5, 2.5, 4.0])
+       and np.allclose(A2._ranks([5, 5, 5]), [2.0, 2.0, 2.0])
+       and len(A2._ranks([])) == 0)
+linhas_const = [
+    {"modelo": "Qwen/Qwen3-0.6B", "metodo": "rtn", "bits": 4, "seed": "0", "Q": 0.90, "Q_acc": 0.95},
+    {"modelo": "Qwen/Qwen3-0.6B", "metodo": "awq", "bits": 4, "seed": "0", "Q": 0.90, "Q_acc": 0.96},
+    {"modelo": "Qwen/Qwen3-0.6B", "metodo": "dwq", "bits": 4, "seed": "0", "Q": 0.92, "Q_acc": 0.94},
+]
+conc_div = A2.concordancia_acuracia(linhas_const, modelos=["Qwen/Qwen3-0.6B"])
+checar("concordancia Q x Q_acc: detecta divergencia entre melhor ciente Q (dwq) e Q_acc (awq)",
+       conc_div["por_modelo_4b"]["Qwen/Qwen3-0.6B"]["melhor_ciente_coincide"] is False)
+conc_var0 = A2.concordancia_acuracia(linhas_const[:2], modelos=["Qwen/Qwen3-0.6B"])
+checar("concordancia Q x Q_acc: variancia nula retorna None sem NaN",
+       conc_var0["pearson_r"] is None and conc_var0["spearman_rho"] is None)
+
+import gerar_tabelas_artigo as GTA  # noqa: E402
+checar("gerar_tabelas_artigo: _safe_div protege divisao por zero",
+       GTA._safe_div(10.0, 0.0, -1.0) == -1.0 and GTA._safe_div(10.0, 2.0) == 5.0
+       and (GTA.TABS / "tabela2_qualidade_mlx.md").exists()
+       and (GTA.FIGS / "figura1_pareto_qualidade_tamanho.svg").exists())
 
 print(f"\n{len(falhas)} falha(s)" + (f": {falhas}" if falhas else ""))
 sys.exit(1 if falhas else 0)

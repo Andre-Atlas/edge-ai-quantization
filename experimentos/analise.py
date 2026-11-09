@@ -15,6 +15,7 @@ ainda ha dado pendente que poderia mudar o veredito. Linhas com status "falhou*"
 import csv
 import json
 from pathlib import Path
+from typing import Any, Sequence
 
 import numpy as np
 
@@ -41,17 +42,22 @@ def ident(r):
 INVALIDOS = set()   # (modelo, metodo, bits, seed) de jobs JA EXECUTADOS e invalidos (status falhou:invalido-*): nao sao "pendentes"
 
 
-def carregar():
-    todas = list(csv.DictReader(open(CSV)))
+def carregar() -> list[dict[str, Any]]:
+    with open(CSV, encoding="utf-8") as f_csv:
+        todas = list(csv.DictReader(f_csv))
     INVALIDOS.clear()
     INVALIDOS.update((r["modelo"], r["metodo"], int(r["bits"]), r["seed"]) for r in todas
                      if r.get("status", "").startswith("falhou:invalido"))
-    linhas = [r for r in todas if r.get("ppl_wikitext2") and not r.get("status", "").startswith("falhou")]
+    metodos_v2 = {"fp", "rtn", *CIENTES}
+    linhas = [r for r in todas if r.get("ppl_wikitext2") and not r.get("status", "").startswith("falhou")
+              and r.get("modelo") in MODELOS and r.get("metodo") in metodos_v2]
     fp = {r["modelo"]: r for r in linhas if r["metodo"] == "fp"}
     for r in linhas:
         r["bits"] = int(r["bits"])
         f = fp.get(r["modelo"])
         r["Q"] = float(f["ppl_wikitext2"]) / float(r["ppl_wikitext2"]) if f else None
+        r["Q_acc"] = (float(r["acc_media"]) / float(f["acc_media"])
+                      if f and r.get("acc_media") and f.get("acc_media") and float(f["acc_media"]) > 0 else None)
         r["ic"] = (None, None)
         a, b = NLL / f"{ident(f)}.npy" if f else None, NLL / f"{ident(r)}.npy"
         if f and a.exists() and b.exists():
@@ -63,21 +69,27 @@ def carregar():
     return linhas
 
 
-def pega(linhas, modelo, metodo, bits, seed="0"):
+def pega(linhas: Sequence[dict[str, Any]], modelo: str, metodo: str, bits: int, seed: str = "0") -> dict[str, Any] | None:
     for r in linhas:
         if r["modelo"] == modelo and r["metodo"] == metodo and r["bits"] == bits and r["seed"] == seed:
             return r
+    return None
 
 
-acima = lambda r: r["ic"][0] is not None and r["ic"][0] >= LIMIAR
-abaixo = lambda r: r["ic"][1] is not None and r["ic"][1] < LIMIAR
+def acima(r: dict[str, Any]) -> bool:
+    return r["ic"][0] is not None and r["ic"][0] >= LIMIAR
 
 
-def resumo(r):
+def abaixo(r: dict[str, Any]) -> bool:
+    return r["ic"][1] is not None and r["ic"][1] < LIMIAR
+
+
+def resumo(r: dict[str, Any] | None) -> dict[str, Any] | None:
     return None if r is None else {"metodo": r["metodo"], "bits": r["bits"], "Q": round(r["Q"], 4), "ic95": r["ic"]}
 
 
-CFG = json.load(open(RAIZ / "matriz.json"))
+with open(RAIZ / "matriz.json", encoding="utf-8") as _f_cfg:
+    CFG = json.load(_f_cfg)
 
 
 def pendente(L, m, metodo, bits):
@@ -210,6 +222,116 @@ def pareto(L):
     return sorted(front, key=lambda x: (x["modelo"], x["tamanho_gb"]))
 
 
+def _ranks(xs: Sequence[float] | np.ndarray) -> np.ndarray:
+    """Postos medios (1..n) com tratamento de empates para correlacao de Spearman."""
+    arr = np.asarray(xs, dtype=np.float64)
+    ordem = np.argsort(arr)
+    ranks = np.empty_like(arr)
+    i = 0
+    while i < len(arr):
+        j = i
+        while j + 1 < len(arr) and arr[ordem[j + 1]] == arr[ordem[i]]:
+            j += 1
+        ranks[ordem[i : j + 1]] = 0.5 * (i + j) + 1.0
+        i = j + 1
+    return ranks
+
+
+def _calcular_corr(x: np.ndarray, y: np.ndarray) -> float | None:
+    """Correlacao linear de Pearson protegida contra variancia nula ou N < 2."""
+    if len(x) < 2 or len(y) < 2 or float(np.std(x)) == 0.0 or float(np.std(y)) == 0.0:
+        return None
+    r = float(np.corrcoef(x, y)[0, 1])
+    return None if np.isnan(r) else round(r, 4)
+
+
+def concordancia_acuracia(L: Sequence[dict[str, Any]], modelos: Sequence[str] | None = None) -> dict[str, Any]:
+    """Checagem diagnostica secundaria (protocolo-v2, Etapa 5): concordancia entre Q = PPL_fp/PPL_q e Q_acc = Acc_q/Acc_fp."""
+    if modelos is None:
+        modelos = MODELOS
+    pares = [r for r in L if r.get("metodo") in ("rtn", *CIENTES) and r.get("seed") == "0"
+             and r.get("Q") is not None and r.get("Q_acc") is not None and r.get("modelo") in modelos]
+    qs = np.array([float(r["Q"]) for r in pares], dtype=np.float64)
+    qas = np.array([float(r["Q_acc"]) for r in pares], dtype=np.float64)
+    pearson = _calcular_corr(qs, qas)
+    spearman = _calcular_corr(_ranks(qs), _ranks(qas))
+    por_modelo, conc_limiar, total_4b, conc_melhor, total_melhor = {}, 0, 0, 0, 0
+    for m in modelos:
+        m4 = [r for r in pares if r["modelo"] == m and int(r["bits"]) == 4]
+        if not m4:
+            continue
+        met_det = {}
+        for r in m4:
+            c_lim = (float(r["Q"]) >= LIMIAR) == (float(r["Q_acc"]) >= LIMIAR)
+            conc_limiar += int(c_lim)
+            total_4b += 1
+            met_det[r["metodo"]] = {
+                "Q": round(float(r["Q"]), 4),
+                "Q_acc": round(float(r["Q_acc"]), 4),
+                "concorda_limiar_95pct": bool(c_lim),
+            }
+        cientes_m = [r for r in m4 if r["metodo"] in CIENTES]
+        melhor_q = max(cientes_m, key=lambda r: float(r["Q"]))["metodo"] if cientes_m else None
+        melhor_qa = max(cientes_m, key=lambda r: float(r["Q_acc"]))["metodo"] if cientes_m else None
+        coincide = (melhor_q == melhor_qa) if melhor_q else None
+        if coincide is not None:
+            conc_melhor += int(coincide)
+            total_melhor += 1
+        por_modelo[m] = {
+            "metodos_4b": met_det,
+            "melhor_ciente_Q": melhor_q,
+            "melhor_ciente_Q_acc": melhor_qa,
+            "melhor_ciente_coincide": coincide,
+        }
+    return {
+        "n_pares": len(pares),
+        "pearson_r": pearson,
+        "spearman_rho": spearman,
+        "concordancia_limiar_4b": f"{conc_limiar}/{total_4b}",
+        "concordancia_melhor_ciente_4b": f"{conc_melhor}/{total_melhor}",
+        "por_modelo_4b": por_modelo,
+    }
+
+
+def variancia_replicas_awq(L: Sequence[dict[str, Any]], modelos: Sequence[str] | None = None) -> dict[str, Any]:
+    """Variancia entre sementes de calibracao (AWQ 4 bits, sementes 0, 1 e 2) em PPL, Q e Q_acc."""
+    if modelos is None:
+        modelos = MODELOS
+    por_modelo: dict[str, Any] = {}
+    vars_q: list[float] = []
+    for m in modelos:
+        rs = [pega(L, m, "awq", 4, s) for s in ("0", "1", "2")]
+        if not all(rs):
+            continue
+        ppls = [float(r["ppl_wikitext2"]) for r in rs if r is not None]
+        qs = [float(r["Q"]) for r in rs if r is not None and r.get("Q") is not None]
+        qas = [float(r["Q_acc"]) for r in rs if r is not None and r.get("Q_acc") is not None]
+        media_ppl = float(np.mean(ppls))
+        dp_ppl = float(np.std(ppls, ddof=1))
+        if len(qs) >= 2:
+            var_q = float(np.var(qs, ddof=1))
+            vars_q.append(var_q)
+            sigma_q: float | None = round(var_q ** 0.5, 5)
+        else:
+            sigma_q = None
+        por_modelo[m] = {
+            "sementes": [0, 1, 2],
+            "ppl": [round(x, 4) for x in ppls],
+            "media_ppl": round(media_ppl, 4),
+            "dp_ppl": round(dp_ppl, 4),
+            "cv_ppl_pct": round(100.0 * dp_ppl / media_ppl, 4) if media_ppl > 0 else None,
+            "Q": [round(x, 4) for x in qs],
+            "sigma_cal_Q": sigma_q,
+            "Q_acc": [round(x, 4) for x in qas],
+            "sigma_cal_Q_acc": round(float(np.std(qas, ddof=1)), 5) if len(qas) >= 2 else None,
+        }
+    sigma_comb = float(np.mean(vars_q) ** 0.5) if vars_q else 0.0
+    return {
+        "sigma_cal_combinado": round(sigma_comb, 5),
+        "por_modelo": por_modelo,
+    }
+
+
 def main():
     if not CSV.exists():
         raise SystemExit("resultados.csv ainda nao existe (rode a matriz)")
@@ -224,6 +346,8 @@ def main():
         v, ev, det = f(L, MODELOS)
         saida["sensibilidade_com_caso_separado"][nome] = {"veredito": v, "resumo": det}
         print(f"{nome} (sensibilidade, com {', '.join(m.split('/')[-1] for m in SEPARADOS)}): {v} | {det}")
+    saida["concordancia_q_acuracia"] = concordancia_acuracia(L)
+    saida["replicas_awq"] = variancia_replicas_awq(L)
     saida["pareto"] = pareto(L)
     SAIDA.write_text(json.dumps(saida, ensure_ascii=False, indent=1, default=float))
     print(f"-> {SAIDA.relative_to(RAIZ.parent)}")

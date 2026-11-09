@@ -1,0 +1,287 @@
+{
+ "protocolo": "protocolo-v3",
+ "sigma_cal": 0.006485912741978135,
+ "sigma_cal_detalhe": {
+  "Qwen/Qwen3-0.6B": [
+   0.8839,
+   0.8878,
+   0.8749
+  ],
+  "Qwen/Qwen3-1.7B": [
+   0.9702,
+   0.9767,
+   0.964
+  ]
+ },
+ "hipoteses": {
+  "H1": {
+   "veredito": "nao avaliavel (N insuficiente)",
+   "resumo": "{'sucesso': 1, 'contrario': 2, 'indeterminado': 1} de 4 avaliaveis",
+   "evidencia": {
+    "Qwen/Qwen3-0.6B": {
+     "classe": "contrario",
+     "rtn": [
+      0.8618,
+      [
+       0.8575,
+       0.8659
+      ]
+     ],
+     "cientes": {
+      "gptq": [
+       0.9155,
+       [
+        0.9024,
+        0.9286
+       ]
+      ],
+      "gptq_fp32": [
+       0.9285,
+       [
+        0.9154,
+        0.9417
+       ]
+      ],
+      "awq": [
+       0.8839,
+       [
+        0.8708,
+        0.8971
+       ]
+      ],
+      "dwq": [
+       0.8968,
+       [
+        0.8836,
+        0.91
+       ]
+      ]
+     }
+    },
+    "Qwen/Qwen3-1.7B": {
+     "classe": "sucesso",
+     "rtn": [
+      0.8555,
+      [
+       0.8447,
+       0.8657
+      ]
+     ],
+     "cientes": {
+      "gptq": [
+       0.9194,
+       [
+        0.9059,
+        0.9328
+       ]
+      ],
+      "awq": [
+       0.9702,
+       [
+        0.9569,
+        0.9836
+       ]
+      ],
+      "dwq": [
+       0.9336,
+       [
+        0.9199,
+        0.9473
+       ]
+      ]
+     }
+    },
+    "HuggingFaceTB/SmolLM3-3B": "nao avaliavel",
+    "meta-llama/Llama-3.2-3B": {
+     "classe": "indeterminado",
+     "rtn": [
+      0.9316,
+      [
+       0.9292,
+       0.9338
+      ]
+     ],
+     "cientes": {
+      "awq": [
+       0.9554,
+       [
+        0.9426,
+        0.9683
+       ]
+      ]
+     }
+    },
+    "Qwen/Qwen3-4B": {
+     "classe": "contrario",
+     "rtn": [
+      0.9418,
+      [
+       0.9371,
+       0.9464
+      ]
+     ],
+     "cientes": {
+      "awq": [
+       0.9317,
+       [
+        0.9184,
+        0.9449
+       ]
+      ]
+     }
+    },
+    "Qwen/Qwen2.5-0.5B": "nao avaliavel",
+    "Qwen/Qwen2.5-1.5B": "nao avaliavel",
+    "Qwen/Qwen2.5-3B": "nao avaliavel",
+    "meta-llama/Llama-3.2-1B": "nao avaliavel"
+   }
+  },
+  "H2": {
+   "veredito": "nao avaliavel (celulas insuficientes)",
+   "resumo": "ordem confirmada em 1 de 4 celulas validas",
+   "evidencia": {
+    "Qwen3-rtn-4b": {
+     "Q": [
+      0.8618,
+      0.8555,
+      0.9418
+     ],
+     "ic_medio_menos_pequeno": [
+      -0.0184,
+      0.0055
+     ],
+     "ic_grande_menos_medio": [
+      0.0744,
+      0.0984
+     ],
+     "ordem_confirmada": false
+    },
+    "Qwen3-rtn-3b": {
+     "Q": [
+      0.3368,
+      0.4079,
+      0.6523
+     ],
+     "ic_medio_menos_pequeno": [
+      0.0565,
+      0.0849
+     ],
+     "ic_grande_menos_medio": [
+      0.229,
+      0.2608
+     ],
+     "ordem_confirmada": true
+    },
+    "Qwen3-awq-4b": {
+     "Q": [
+      0.8839,
+      0.9702,
+      0.9317
+     ],
+     "ic_medio_menos_pequeno": [
+      0.0677,
+      0.1049
+     ],
+     "ic_grande_menos_medio": [
+      -0.0573,
+      -0.0197
+     ],
+     "ordem_confirmada": false
+    },
+    "Qwen3-awq-3b": {
+     "Q": [
+      0.6276,
+      0.7903,
+      0.8069
+     ],
+     "ic_medio_menos_pequeno": [
+      0.1435,
+      0.1817
+     ],
+     "ic_grande_menos_medio": [
+      -0.0029,
+      0.0361
+     ],
+     "ordem_confirmada": false
+    }
+   }
+  },
+  "H3": {
+   "veredito": "nao avaliavel (N insuficiente)",
+   "resumo": "1a metade corroborada {'sim': 5, 'contrario': 0, 'indeterminado': 0} (N=5); 2a metade nao avaliavel (N insuficiente) {'sim': 2, 'contrario': 0, 'indeterminado': 0} (N=2)",
+   "evidencia": {
+    "Qwen/Qwen3-0.6B": {
+     "S_ic": [
+      8.361,
+      8.5502
+     ],
+     "superlinear": "sim",
+     "L3_razao_melhor_rtn": [
+      0.669,
+      0.7093
+     ],
+     "melhor": "dwq",
+     "reduz_20pct": "sim"
+    },
+    "Qwen/Qwen3-1.7B": {
+     "S_ic": [
+      8.8161,
+      9.0505
+     ],
+     "superlinear": "sim",
+     "L3_razao_melhor_rtn": [
+      0.5764,
+      0.6269
+     ],
+     "melhor": "dwq",
+     "reduz_20pct": "sim"
+    },
+    "HuggingFaceTB/SmolLM3-3B": {
+     "S_ic": [
+      17.092,
+      19.4565
+     ],
+     "superlinear": "sim"
+    },
+    "meta-llama/Llama-3.2-3B": {
+     "S_ic": [
+      5.0639,
+      5.2161
+     ],
+     "superlinear": "sim"
+    },
+    "Qwen/Qwen3-4B": {
+     "S_ic": [
+      5.8982,
+      6.0488
+     ],
+     "superlinear": "sim"
+    },
+    "Qwen/Qwen2.5-0.5B": "nao avaliavel",
+    "Qwen/Qwen2.5-1.5B": "nao avaliavel",
+    "Qwen/Qwen2.5-3B": "nao avaliavel",
+    "meta-llama/Llama-3.2-1B": "nao avaliavel"
+   }
+  }
+ },
+ "robustez_so_novos": {
+  "H1": {
+   "resumo": "{'sucesso': 0, 'contrario': 0, 'indeterminado': 0} de 0 avaliaveis",
+   "evidencia": {
+    "Qwen/Qwen2.5-0.5B": "nao avaliavel",
+    "Qwen/Qwen2.5-1.5B": "nao avaliavel",
+    "Qwen/Qwen2.5-3B": "nao avaliavel",
+    "meta-llama/Llama-3.2-1B": "nao avaliavel"
+   }
+  },
+  "H3": {
+   "resumo": "1a metade nao avaliavel (N insuficiente) {'sim': 0, 'contrario': 0, 'indeterminado': 0} (N=0); 2a metade nao avaliavel (N insuficiente) {'sim': 0, 'contrario': 0, 'indeterminado': 0} (N=0)",
+   "evidencia": {
+    "Qwen/Qwen2.5-0.5B": "nao avaliavel",
+    "Qwen/Qwen2.5-1.5B": "nao avaliavel",
+    "Qwen/Qwen2.5-3B": "nao avaliavel",
+    "meta-llama/Llama-3.2-1B": "nao avaliavel"
+   }
+  }
+ }
+}

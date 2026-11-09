@@ -176,6 +176,174 @@
    "resumo": "incrementos medios de L (RTN, 5 modelos): 4->3 0.4631, 3->2 0.4247; reducao >=20% em 3b em 2, sem reducao em 0; nao avaliaveis: ['HuggingFaceTB/SmolLM3-3B', 'meta-llama/Llama-3.2-3B', 'Qwen/Qwen3-4B']; pendentes: []"
   }
  },
+ "concordancia_q_acuracia": {
+  "n_pares": 50,
+  "pearson_r": 0.952,
+  "spearman_rho": 0.9413,
+  "concordancia_limiar_4b": "3/13",
+  "concordancia_melhor_ciente_4b": "3/4",
+  "por_modelo_4b": {
+   "Qwen/Qwen3-0.6B": {
+    "metodos_4b": {
+     "rtn": {
+      "Q": 0.8618,
+      "Q_acc": 0.9378,
+      "concorda_limiar_95pct": true
+     },
+     "gptq": {
+      "Q": 0.9155,
+      "Q_acc": 0.9562,
+      "concorda_limiar_95pct": false
+     },
+     "awq": {
+      "Q": 0.8839,
+      "Q_acc": 0.97,
+      "concorda_limiar_95pct": false
+     },
+     "dwq": {
+      "Q": 0.8968,
+      "Q_acc": 0.9697,
+      "concorda_limiar_95pct": false
+     }
+    },
+    "melhor_ciente_Q": "gptq",
+    "melhor_ciente_Q_acc": "awq",
+    "melhor_ciente_coincide": false
+   },
+   "Qwen/Qwen3-1.7B": {
+    "metodos_4b": {
+     "rtn": {
+      "Q": 0.8555,
+      "Q_acc": 0.9676,
+      "concorda_limiar_95pct": false
+     },
+     "gptq": {
+      "Q": 0.9194,
+      "Q_acc": 0.9907,
+      "concorda_limiar_95pct": false
+     },
+     "awq": {
+      "Q": 0.9702,
+      "Q_acc": 1.0002,
+      "concorda_limiar_95pct": true
+     },
+     "dwq": {
+      "Q": 0.9336,
+      "Q_acc": 0.9925,
+      "concorda_limiar_95pct": false
+     }
+    },
+    "melhor_ciente_Q": "awq",
+    "melhor_ciente_Q_acc": "awq",
+    "melhor_ciente_coincide": true
+   },
+   "HuggingFaceTB/SmolLM3-3B": {
+    "metodos_4b": {
+     "rtn": {
+      "Q": 0.8524,
+      "Q_acc": 0.9786,
+      "concorda_limiar_95pct": false
+     }
+    },
+    "melhor_ciente_Q": null,
+    "melhor_ciente_Q_acc": null,
+    "melhor_ciente_coincide": null
+   },
+   "meta-llama/Llama-3.2-3B": {
+    "metodos_4b": {
+     "rtn": {
+      "Q": 0.9316,
+      "Q_acc": 0.975,
+      "concorda_limiar_95pct": false
+     },
+     "awq": {
+      "Q": 0.9554,
+      "Q_acc": 0.9876,
+      "concorda_limiar_95pct": true
+     }
+    },
+    "melhor_ciente_Q": "awq",
+    "melhor_ciente_Q_acc": "awq",
+    "melhor_ciente_coincide": true
+   },
+   "Qwen/Qwen3-4B": {
+    "metodos_4b": {
+     "rtn": {
+      "Q": 0.9418,
+      "Q_acc": 0.9697,
+      "concorda_limiar_95pct": false
+     },
+     "awq": {
+      "Q": 0.9317,
+      "Q_acc": 0.9672,
+      "concorda_limiar_95pct": false
+     }
+    },
+    "melhor_ciente_Q": "awq",
+    "melhor_ciente_Q_acc": "awq",
+    "melhor_ciente_coincide": true
+   }
+  }
+ },
+ "replicas_awq": {
+  "sigma_cal_combinado": 0.00649,
+  "por_modelo": {
+   "Qwen/Qwen3-0.6B": {
+    "sementes": [
+     0,
+     1,
+     2
+    ],
+    "ppl": [
+     23.7196,
+     23.6157,
+     23.9642
+    ],
+    "media_ppl": 23.7665,
+    "dp_ppl": 0.1789,
+    "cv_ppl_pct": 0.7528,
+    "Q": [
+     0.8839,
+     0.8878,
+     0.8749
+    ],
+    "sigma_cal_Q": 0.00662,
+    "Q_acc": [
+     0.97,
+     0.9493,
+     0.9637
+    ],
+    "sigma_cal_Q_acc": 0.0106
+   },
+   "Qwen/Qwen3-1.7B": {
+    "sementes": [
+     0,
+     1,
+     2
+    ],
+    "ppl": [
+     17.2334,
+     17.1184,
+     17.3438
+    ],
+    "media_ppl": 17.2319,
+    "dp_ppl": 0.1127,
+    "cv_ppl_pct": 0.6539,
+    "Q": [
+     0.9702,
+     0.9767,
+     0.964
+    ],
+    "sigma_cal_Q": 0.00635,
+    "Q_acc": [
+     1.0002,
+     0.9929,
+     0.9991
+    ],
+    "sigma_cal_Q_acc": 0.00394
+   }
+  }
+ },
  "pareto": [
   {
    "modelo": "HuggingFaceTB/SmolLM3-3B",
