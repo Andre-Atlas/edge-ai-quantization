@@ -214,6 +214,17 @@
 6. **Impacto no cronograma:** o plano previa dados congelados em 16/11. Com 1 de 52 jobs concluídos e a retomada dependendo de nova ordem, a v3 completa não cabe nos fins de semana restantes antes de 18/12 sem decisão do usuário (reduzir a grade, ou aceitar H1–H3 como inconclusivas e reportar a v3 como parcial). **Decisão em aberto.**
 7. **Painel (9/11):** `exportar_site.py` regenerado (80 linhas; exclui linhas só quantizadas, sem PPL); o painel passou a mostrar o estado do estudo, o método GPTQ-fp32 e os vereditos provisórios da v2.
 
+### Fase 25 — Migração do workspace, fechamento analítico da Etapa 5, 27 fichas e manuscrito (09/11, 19:20–20:05)
+1. **Migração do workspace (D26):** o repositório completo (163,5 GB, incluindo `experimentos/modelos/`, `experimentos/ferramentas/` com `llama.cpp` compilado e GGUFs, `experimentos/logs/`, `.venv/` e histórico Git em `3691822`) foi movido do diretório temporário do Claude Desktop (`scratch-workspaces`) para `/Users/andreatlas/Downloads/Edge AI & Quantization`, mantendo um symlink de compatibilidade no caminho antigo e atualizando os caminhos nos plists em `~/Library/LaunchAgents/`.
+2. **Validação de sanidade 3 bits do `gptq_fp32` (D27, `protocolo-v3` §4.2):** concluída a avaliação do modelo `Qwen3-0.6B-gptq_fp32-3b-g64-s0` (quantizado em 06/11): **PPL = 40,20** ($Q = 0,5216$), satisfazendo a desigualdade estrita pré-registrada $\text{PPL}_{\text{gptq\_fp32 4b}} (22,58) < \text{PPL}_{\text{gptq\_fp32 3b}} (40,20) < \text{PPL}_{\text{rtn 3b}} (62,26)$. Criado também o orquestrador `experimentos/rodar_bloco1_v3.sh` com trava obrigatória de tomada (`AC Power` via `pmset -g batt`) para o Bloco 1 da v3 (5 modelos da v2 em `gptq_fp32` 4 e 3 bits).
+3. **Fechamento analítico da Etapa 5 (D28, `experimentos/analise.py` e `testes_v3.py`):**
+   - Filtro explícito em `analise.carregar()` para os 5 modelos e métodos da `v2` (`fp`, `rtn`, `gptq`, `awq`, `dwq`), preservando `n_configuracoes = 59` e a fronteira de Pareto da `v2` sem contaminação pelas linhas `gptq_fp32` da `v3`.
+   - **Concordância $Q \times Q_{\text{acc}}$ (`concordancia_acuracia`):** nas $N = 50$ configurações válidas quantizadas da `v2` (`seed == 0`), correlação linear de Pearson **$r = 0,9520$**, correlação de postos de Spearman **$\rho = 0,9413$**, e coincidência do melhor método calibrado a 4 bits em **3 de 4 modelos avaliáveis** (`Qwen3-1,7B`, `Llama-3.2-3B` e `Qwen3-4B`; divergência apenas em `Qwen3-0,6B` onde `gptq` lidera em PPL e `dwq` em acurácia por +0,0063).
+   - **Variância entre sementes de calibração do AWQ 4 bits (`variancia_replicas_awq`, sementes 0, 1, 2):** $\sigma_{\text{cal}}(Q) = 0,00649$ combinado ($\text{Qwen3-0,6B}$: $\sigma(Q) = 0,00662$, $\text{CV}_{\text{PPL}} = 0,75\%$; $\text{Qwen3-1,7B}$: $\sigma(Q) = 0,00635$, $\text{CV}_{\text{PPL}} = 0,65\%$).
+   - Suite de testes `experimentos/testes_v3.py` ampliada para 25 asserções (`0 falha(s)`).
+4. **Etapa 7A — Fichamento bibliográfico completo (`literatura/fichas/`):** redigidas as 27 fichas de leitura estruturadas (`01-shuvo2023efficient.md` a `27-kawrakow2023kquants.md`) e o índice `literatura/fichas/README.md`, seguindo `metodologia/ficha-modelo.md` (Severino + Popper), com marcação explícita de quais textos tiveram PDF integral inspecionado e quais foram fichados a partir de metadados/resumo verificados.
+5. **Etapa 7B — Tabelas, figuras e manuscrito científico (`artigo/`):** criado `experimentos/gerar_tabelas_artigo.py` gerando reprodutivelmente 5 tabelas em Markdown e LaTeX (`artigo/tabelas/tabela1` a `tabela5`) e 4 figuras vetoriais SVG (`artigo/figuras/figura1` a `figura4`), além da redação integral do manuscrito científico em português (`artigo/manuscrito.md`, padrão ABNT / Severino + Popper).
+
 
 ## 1A. Raciocínio por trás de cada ação
 
@@ -376,6 +387,15 @@
 | Testar se o veredito sobrevive a uma contaminação de 20% | A conclusão deve ser robusta ao pior caso plausível; E ≥ 0,7 mesmo assim | Refazer tudo com o app fechado sem necessidade |
 | Registrar o padrão E × tamanho como achado | Não estava no protocolo e é relevante para a discussão: o ganho de velocidade só se aproxima do teórico em modelos maiores | Reportar só o veredito da H4 |
 
+### Fase 25 — migração, fechamento analítico da Etapa 5, fichas e manuscrito
+| Ação | Por quê | Alternativa descartada |
+|---|---|---|
+| Mover os 163,5 GB para `Downloads/Edge AI & Quantization` e criar symlink no caminho antigo | Preserva o trabalho fora do diretório temporário do Claude Desktop sem quebrar scripts antigos | Clonar só o Git e perder 162 GB de modelos/ferramentas |
+| Filtrar `analise.carregar()` estritamente aos modelos e métodos da `v2` | Evita que linhas `gptq_fp32` da `v3` alterem `n_configuracoes` (`59`) ou a fronteira de Pareto da `v2` (P1) | Deixar `analise.py` ler todas as linhas do CSV |
+| Incluir $Q \times Q_{\text{acc}}$ e $\sigma_{\text{cal}}$ como diagnósticos secundários em `hipoteses.json` | Fecha as lacunas apontadas desde 22/10 sem alterar os vereditos primários pré-registrados (P1) | Alterar os critérios de H1–H4 pós-hoc |
+| Marcar em cada ficha se o texto integral (PDF) foi lido ou se o fichamento parte de metadados/resumo verificados | Transparência metodológica exigida por Severino: nunca fabricar páginas ou citações diretas | Omitir a distinção ou inventar páginas |
+| Gerar todas as tabelas e figuras por script (`gerar_tabelas_artigo.py`) a partir dos CSVs/JSONs | Garante reprodutibilidade exata e zero transcrição manual entre dados e manuscrito | Montar tabelas à mão |
+
 ## 2. Registro de decisões
 
 | # | Data | Decisão | Quem | Alternativas consideradas | Efeito |
@@ -401,6 +421,12 @@
 | D19 | 25/10 | Corrigir o `analise.py` (invalidados não são pendentes) e a fórmula de memória do AWQ; rodar os AWQ de 3, 2 e 8 bits do Llama e do Qwen3-4B | Usuário | só relatar; esperar o resultado do 4B para recalibrar | H1 provisória passa a inconclusiva; seis jobs em execução |
 | D20 | 25/10 | Avisar por e-mail quando os seis AWQ terminarem | Usuário | — | E-mail 6 (26/10, ~05h) |
 | D21 | 26/10 | Rodar a fase de velocidade **agora**, com o app Claude **aberto** (para análise e e-mail) | Usuário | rodar à noite com o app fechado; às 2h | Contaminação medida (controles e amostras), não eliminada |
+| D22 | 26/10 | Repetir a fase de velocidade com o app Claude fechado (rodada 2 de referência) | Usuário | manter só a rodada 1 | Diferença média de −0,4%; H4 confirmada sem ressalva |
+| D24 | 26/10 | Cancelar e excluir o DWQ do SmolLM3 da matriz | Usuário | tentar rodar com trava de 1,5 GB | Grade da v2 fechada em 68 jobs executados (59 válidos, 9 inválidos) |
+| D25 | 26/10 | Criar a extensão pré-registrada `protocolo-v3` (novos modelos + `gptq_fp32` + regras decidíveis) | Usuário | reanálise pós-hoc da v2 | Tag `protocolo-v3`, `matriz-v3.json` (52 jobs) e `analise_v3.py` |
+| D26 | 09/11 | Migrar o repositório completo (163,5 GB) para `/Users/andreatlas/Downloads/Edge AI & Quantization` com symlink no caminho antigo | Usuário | clonar só o Git; manter no `scratch-workspaces` | Workspace unificado e preservado |
+| D27 | 09/11 | Focar a Etapa 4b (`v3`) nos 5 modelos da `v2` com `gptq_fp32` (concluir avaliação 3b do 0,6B + script com trava `AC Power`) | Usuário | retomar os 52 jobs completos; congelar sem avaliar o 3b | Validação de sanidade 3b concluída; `rodar_bloco1_v3.sh` pronto |
+| D28 | 09/11 | Executar fechamento analítico da Etapa 5 ($Q \times Q_{\text{acc}}$ e $\sigma_{\text{cal}}$), 27 fichas de leitura e manuscrito científico completo com tabelas/figuras | Usuário | fazer apenas uma das frentes por vez | Etapas 5, 6 e 7 concluídas de ponta a ponta |
 
 **Decisões de implementação do Assistente (sem escolha do usuário):** fator 1,4 do pico do MLX ao footprint; teto de partida = metade da RAM; estimativa `2,1 × fp_gb + 0,5` do GPTQ camada a camada; `awq_liberar` sempre ativo na matriz; remoção de entradas de `excluir` quando a alternativa foi validada; marcação de linhas NaN como inválidas (mesma regra que o usuário aprovou para o SmolLM3). Todas estão em `LOGICA-QUANTIZACAO.md` com o motivo.
 

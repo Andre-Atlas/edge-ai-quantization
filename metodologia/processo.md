@@ -1,21 +1,22 @@
 # Processo de desenvolvimento em etapas
 
-> Documento central do andamento do estudo: **o que cada etapa constitui**, **o que foi feito** (com data, commit e evidência) e **o que falta**. Atualizado em 25/10/2026. Regra de origem: cada etapa só começa quando a anterior passa na sua validação. **Na prática** as etapas 3, 6 e 7 correram em paralelo à 2 em 22/10 (sessões separadas, sem dependência de dados entre si), e o código da etapa 5 foi escrito antes da execução da etapa 4; a seção 2 registra a ordem real.
+> Documento central do andamento do estudo: **o que cada etapa constitui**, **o que foi feito** (com data, commit e evidência) e **o que falta**. Atualizado em 09/11/2026. Regra de origem: cada etapa só começa quando a anterior passa na sua validação. **Na prática** as etapas 3, 6 e 7 correram em paralelo à 2 em 22/10 (sessões separadas, sem dependência de dados entre si), e o código da etapa 5 foi escrito antes da execução da etapa 4; a seção 2 registra a ordem real.
 >
-> Documentos de apoio: `metodologia/protocolo.md` (v1, congelado) e `metodologia/protocolo-v2.md` (vigente: o que mudou e por quê); `metodologia/caderno-de-laboratorio.md` (cronologia passo a passo da etapa 4, raciocínio de cada ação, decisões e incidentes); `experimentos/LOGICA-QUANTIZACAO.md` (lógica do código e validações).
+> Documentos de apoio: `metodologia/protocolo.md` (v1, congelado), `metodologia/protocolo-v2.md` (vigente para a grade de 5 modelos) e `metodologia/protocolo-v3.md` (extensão pré-registrada); `metodologia/caderno-de-laboratorio.md` (cronologia passo a passo da etapa 4 e fases seguintes, raciocínio de cada ação, decisões e incidentes); `experimentos/LOGICA-QUANTIZACAO.md` (lógica do código e validações).
 
 ## 1. Visão geral
 
-| Etapa | Constitui | Validação | Estado (25/10/2026) |
+| Etapa | Constitui | Validação | Estado (09/11/2026) |
 |---|---|---|---|
 | 0. Ambiente e piloto | `uv` + Python 3.14.9, mlx-lm 0.32.2; pipeline MLX; piloto no Qwen3-0,6B (4 bits) | FP e os 4 métodos rodam de ponta a ponta | ✅ concluída (22/10) |
-| 1. Protocolo | `protocolo.md` (tag `protocolo-v1`); `protocolo-v2.md` (tag `protocolo-v2`) | limiares de H1–H4 fixados antes da rodada final; mudanças só por nova versão | ✅ v1 (22/10) · ✅ v2 vigente (25/10) |
-| 2. Pipeline robusto | `rodar.py`, `avaliar.py`, `matriz.py`, `testes.py` | `testes.py` passa (determinismo, monotonicidade, 8 bits ≈ FP, tamanho, lm-eval) | ✅ 8/8 testes (22/10); ampliado na etapa 4 |
-| 3. llama.cpp (K-quants) | `kquant.py` (Q8_0, Q4_K_M, Q3_K_M, Q2_K com imatrix) | Q8_0 ≤ 1% do F16; PPL monotônica entre os tipos | ✅ validado no 0,6B (22/10); ✅ qualidade dos 5 modelos (25/10); ✅ velocidade dos 5 modelos (26/10) |
-| 4. Matriz completa | `resultados/resultados.csv`: qualidade de 89 jobs da v1 (72 após as lacunas da v2) + velocidade isolada | checagens por job; falhas marcadas sem interromper a fila; dados inválidos marcados | ✅ qualidade fechada (59 válidos, 9 inválidos por NaN, 0 pendentes; DWQ × SmolLM3 excluído); ✅ velocidade (59 jobs MLX + 25 K-quants, 26/10) |
-| 5. Análise das hipóteses | `analise.py` → `hipoteses.json`; `analise_h3_nll.py` (secundária) | veredito só pelos critérios do protocolo; IC que cruza o limiar = inconclusiva | 🟡 código pronto e adaptado à v2; `hipoteses.json` final depende da etapa 4 |
-| 6. Painel (GitHub Pages) | `site/` gerado por `exportar_site.py`; `.github/workflows/pages.yml` | abre em desktop e celular, sem erro no console, números iguais ao CSV | 🟡 publicado com os dados do **piloto**; atualizar ao fechar a etapa 4 |
-| 7. Literatura e redação | rodada 2 de busca, fichas, rascunho pt-BR (ABNT) | cada afirmação aponta para uma linha do CSV; cada citação com DOI/arXiv conferido | 🟡 rodada 2 feita (#14–#27); fichas e redação pendentes |
+| 1. Protocolo | `protocolo.md` (`protocolo-v1`); `protocolo-v2.md` (`protocolo-v2`); `protocolo-v3.md` (`protocolo-v3`) | limiares de H1–H4 fixados antes da rodada final; mudanças só por nova versão | ✅ v1 (22/10) · ✅ v2 (25/10) · ✅ v3 (26/10) |
+| 2. Pipeline robusto | `rodar.py`, `avaliar.py`, `matriz.py`, `testes.py`, `testes_v3.py` | `testes.py` (8/8) e `testes_v3.py` (25/25) passam | ✅ concluída e ampliada (22/10–09/11) |
+| 3. llama.cpp (K-quants) | `kquant.py` (Q8_0, Q4_K_M, Q3_K_M, Q2_K com imatrix) | Q8_0 ≤ 1% do F16; PPL monotônica entre os tipos | ✅ qualidade (25/10) e velocidade (26/10) dos 5 modelos |
+| 4. Matriz completa | `resultados/resultados.csv`: qualidade de 72 jobs da v2 + velocidade isolada (rodadas 1 e 2) | checagens por job; falhas marcadas sem interromper a fila; dados inválidos marcados | ✅ qualidade fechada (59 válidos, 9 inválidos por NaN, 4 excluídos DWQ×SmolLM3) + velocidade (26/10) |
+| 4b. Extensão v3 | `matriz-v3.json`, `gptq_fp32`, `rodar_bloco1_v3.sh`, `analise_v3.py` | regressão 704/704 tensores; sanidade 3 bits ($\text{PPL}_{4\text{b}} < \text{PPL}_{3\text{b}} < \text{PPL}_{\text{RTN3}}$) | 🟡 validação 704/704 e sanidade 3b no `Qwen3-0,6B` concluídas (09/11); fila do Bloco 1 pronta com trava `AC Power` |
+| 5. Análise das hipóteses | `analise.py` → `hipoteses.json`; `analise_h3_nll.py`; concordância $Q \times Q_{\text{acc}}$ e variância $\sigma_{\text{cal}}$ | veredito só pelos critérios do protocolo; diagnósticos secundários explícitos | ✅ fechada para a matriz v2 (09/11): H4 corroborada; H1–H3 inconclusivas; $r(Q, Q_{\text{acc}}) = 0,9520$; $\sigma_{\text{cal}}(Q) = 0,0065$ |
+| 6. Painel (GitHub Pages) | `site/` gerado por `exportar_site.py`; `.github/workflows/pages.yml` | abre em desktop e celular, sem erro no console, números iguais ao CSV | ✅ atualizado com a matriz v2 e validação `gptq_fp32` (09/11) |
+| 7. Literatura e redação | 27 fichas (`literatura/fichas/`), script `gerar_tabelas_artigo.py` e manuscrito `artigo/manuscrito.md` | cada afirmação aponta para o CSV/JSON; cada citação com DOI/arXiv conferido | ✅ 27 fichas + índice, 5 tabelas (MD/LaTeX), 4 figuras SVG e manuscrito completo (09/11) |
 
 ## 2. Linha do tempo real (linearidade dos experimentos)
 
@@ -91,33 +92,30 @@
   7. Desligar o agendamento `launchd` (`com.edgeai.etapa4`), que continua carregado e tenta disparar todo dia à meia-noite (um marcador impede a repetição).
 
 ### Etapa 4b — 🟡 (extensão pré-registrada, protocolo v3)
-- **Feito (26/10):**
+- **Feito (26/10–09/11):**
   - protocolo v3 (tag `protocolo-v3`);
-  - código (GPTQ-fp32 com 3 bits, grade v3 com 52 jobs, `analise_v3.py`, testes 23/23);
-  - download dos Qwen2.5;
-  - agendamento semanal (sexta 18h a segunda 22h).
-- **Executado (30/10–08/11):** validação de regressão 704/704 (duas vezes); GPTQ-fp32 4 bits no Qwen3-0,6B concluído (PPL 22,58); 3 bits quantizado, sem avaliação. **Pausada em 08/11 a pedido do usuário** (job `.plist.pausado`). Incidente de energia em 30/10 (Mac na bateria): ver Fase 24 do caderno. 1 de 52 jobs concluído.
-- **Falta (plano original, hoje atrasado):**
-  - **Fim de semana 1 (30/10–02/11):** validação, GPTQ-fp32 dos 5 modelos da v2, Qwen2.5-0.5B e Llama-3.2-1B (se o acesso sair).
-  - **Fim de semana 2 (06–09/11):** os demais.
-  - **13–16/11:** reserva. Dados congelados em 16/11.
-  - Depois: `analise_v3.py` → `hipoteses-v3.json`.
+  - código (GPTQ-fp32 com 3 bits, grade v3 com 52 jobs, `analise_v3.py`, testes `testes_v3.py` 25/25);
+  - download dos 4 modelos novos (`Qwen2.5-0.5B`, `1.5B`, `3B` e `Llama-3.2-1B`);
+  - validação de regressão 704/704 tensores e validação de sanidade 3 bits no `Qwen3-0,6B` concluídas ($\text{PPL}_{4\text{b}} = 22,58 < \text{PPL}_{3\text{b}} = 40,20 < \text{PPL}_{\text{RTN3}} = 62,26$);
+  - orquestrador `experimentos/rodar_bloco1_v3.sh` criado com trava obrigatória de tomada (`AC Power`) para rodar o `gptq_fp32` (4 e 3 bits) nos 5 modelos da v2 (D27).
+- **Falta (opcional, sob demanda):**
+  - Disparar `./experimentos/rodar_bloco1_v3.sh` conectado à tomada para completar os modelos restantes do Bloco 1 da v3 e regenerar `hipoteses-v3.json`.
 
-### Etapa 5 — 🟡
-- Feito: `analise.py` com os critérios da v1 (22/10) e as regras da v2 (25/10), sensibilidade ao SmolLM3, testes sintéticos dos ramos; `analise_h3_nll.py` (análise secundária). Vereditos **provisórios** (25/10, ~17h, sem gravar `hipoteses.json`): H1 **inconclusiva** (critério atendido em 2 dos 4 modelos contados: Qwen3-1,7B e Llama; depois da correção que trata o job inválido como definitivo); H2 inconclusiva (1 de 2 células); H3 inconclusiva sem o SmolLM3 e refutada com ele; **H4 corroborada** (E = 0,85–0,88 nos modelos de 3–4B).
-- Falta (lacunas apontadas em 22/10 e ainda abertas): (a) a acurácia (métrica secundária `Q_acc`) não entra nos vereditos nem como checagem de concordância; (b) as réplicas de AWQ não entram na análise (variância entre sementes calculada só no caderno); (c) o bootstrap mede só a incerteza do texto de avaliação, não a da calibração. Gerar `hipoteses.json` final quando a etapa 4 fechar.
+### Etapa 5 — ✅ (fechada para a matriz v2)
+- Feito: `analise.py` com os critérios da v1 (22/10) e as regras da v2 (25/10), sensibilidade ao SmolLM3, testes sintéticos dos ramos; `analise_h3_nll.py` (análise secundária em NLL); e em 09/11 os diagnósticos secundários de **concordância entre perplexidade e acurácia zero-shot** (`concordancia_acuracia`: Pearson $r = 0,9520$, Spearman $\rho = 0,9413$ em $N = 50$ configurações válidas; coincidência do melhor método calibrado a 4 bits em 3 de 4 modelos) e **variância entre sementes de calibração do AWQ 4 bits** (`variancia_replicas_awq`: $\sigma_{\text{cal}}(Q) = 0,0065$, $\text{CV}_{\text{PPL}} = 0,65\text{--}0,75\%$). `resultados/hipoteses.json` final gravado.
+- Falta: nada para a matriz v2.
 
-### Etapa 6 — 🟡
-- Feito: painel (`site/`), exportador e publicação automática a cada push na `main`; validado localmente.
-- Falta: regenerar `site/data/resultados.json` com a matriz completa (decisão de 25/10: manter o piloto até a etapa 4 fechar); conferir que o painel lê o formato real do `hipoteses.json` (`{"hipoteses": {"H1": {"veredito", "resumo", "evidencia"}}}`); testar a renderização com vários modelos; exibir a coluna `impl` e as linhas inválidas como lacunas declaradas.
+### Etapa 6 — ✅
+- Feito: painel (`site/`), exportador (`exportar_site.py`) e publicação automática a cada push na `main`; regenerado com a matriz completa da v2, K-quants e validação `gptq_fp32` da v3 (`site/data/resultados.json`).
+- Falta: nada (atualizar novamente caso o Bloco 1 completo da v3 seja executado).
 
-### Etapa 7 — 🟡
-- Feito: rodada 1 (13 trabalhos) e rodada 2 (#14–#27: 12 acadêmicos + 2 documentos técnicos; metadados conferidos; lacuna reformulada em `vertente.md`).
-- Falta: fichas (`literatura/fichas/` vazia: nenhum texto completo lido); bases não consultadas diretamente (IEEE Xplore, ACM DL, Springer Link, anais de MLSys/ICLR/NeurIPS/ICML/ACL); *snowballing*; redação em pt-BR (ABNT) com tabelas e figuras geradas dos dados; incluir na discussão a falha do GPTQ padrão e as implementações de menor memória.
+### Etapa 7 — ✅
+- Feito: rodada 1 (13 trabalhos) e rodada 2 (#14–#27: 12 acadêmicos + 2 documentos técnicos; metadados conferidos); **27 fichas de leitura estruturadas** (`literatura/fichas/01-shuvo2023efficient.md` a `27-kawrakow2023kquants.md` + `literatura/fichas/README.md`) seguindo Severino + Popper; script reprodutível `experimentos/gerar_tabelas_artigo.py` gerando **5 tabelas** em Markdown e LaTeX (`artigo/tabelas/`) e **4 figuras vetoriais SVG** (`artigo/figuras/`); e **manuscrito científico completo** em português (`artigo/manuscrito.md`, ABNT / Severino + Popper).
+- Falta: conferência das páginas na edição física de Popper e Severino pelo autor antes da submissão final.
 
 ## 5. Resultados obtidos até aqui (resumo)
 
 - **Pipeline (etapa 2, Qwen3-0,6B):** RTN repetido dá PPL idêntica (24,3302); PPL monotônica 21,04 (8b) ≤ 24,33 (4b) ≤ 62,26 (3b) ≤ 748 573 (2b); 8 bits a 0,35% do FP.
-- **K-quants (etapa 3, Qwen3-0,6B, razão PPL_F16/PPL):** Q8_0 0,998 · Q4_K_M 0,939 · Q3_K_M 0,861 · Q2_K 0,497.
-- **Matriz (etapa 4, parcial):** 8 bits sem perda; colapso em 2 bits em todos os métodos; a 3 bits os métodos com calibração superam o RTN com folga; ruído entre sementes do AWQ ~0,7–0,8% de PPL; GPTQ padrão do mlx-lm 0.32.2 falha (NaN) em SmolLM3, Llama-3.2-3B e Qwen3-4B por arredondamento em bf16 da Hessiana.
-- **Literatura (etapa 7):** avaliações de sistema em Apple Silicon existem; a lacuna é a comparação lado a lado de algoritmos de PTQ com qualidade e eficiência juntas.
+- **K-quants (etapa 3, 5 modelos, razão PPL_F16/PPL):** Q8_0 0,998–1,000 · Q4_K_M 0,939–0,975 · Q3_K_M 0,861–0,937 · Q2_K 0,497–0,747; decodificação até 2,70× mais rápida que F16 em 3–4B.
+- **Matriz MLX (etapas 4 e 5, 59 configurações válidas + 9 inválidas por NaN):** 8 bits sem perda ($Q \ge 0,996$); colapso em 2 bits em todos os métodos; a 3 bits os métodos com calibração superam o RTN com folga (+16 a +21 pp de $Q$); ruído entre sementes do AWQ $\sigma_{\text{cal}}(Q) = 0,0065$ ($\text{CV}_{\text{PPL}} \approx 0,65\text{--}0,75\%$); forte concordância entre retenção de perplexidade e acurácia zero-shot ($r = 0,9520$, $\rho = 0,9413$); **H4 corroborada** ($E = 0,83\text{--}0,87 \ge 0,60$ nos modelos de 3–4B); GPTQ padrão do `mlx-lm 0.32.2` falha (`NaN`) em todos os modelos de 3–4B por arredondamento em `bfloat16` da Hessiana, corrigido por `gptq_fp32` (`--hessiana fp32`).
+- **Literatura e manuscrito (etapa 7):** 27 obras fichadas (`literatura/fichas/`) e artigo completo redigido em `artigo/manuscrito.md` com tabelas e figuras geradas diretamente dos CSVs/JSONs.

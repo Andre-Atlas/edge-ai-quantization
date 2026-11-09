@@ -1,0 +1,36 @@
+\begin{table}[htbp]
+\centering
+\caption{Retenção de qualidade $Q = \text{PPL}_{\text{fp}}/\text{PPL}_q$ (e $Q_{\text{acc}} = \text{Acc}_q/\text{Acc}_{\text{fp}}$) por modelo, largura de bits e algoritmo no MLX (semente 0). \texttt{NaN} indica falha numérica da decomposição de Cholesky da Hessiana em \texttt{bf16}; ``---'' indica exclusão por suporte da ferramenta ou limite de memória unificada (24~GiB).}
+\label{tab:qualidade_mlx}
+\footnotesize
+\begin{tabular}{llccccc}
+\toprule
+Modelo & Bits & RTN & GPTQ (bf16) & GPTQ (fp32) & AWQ & DWQ \\
+\midrule
+Qwen3-0.6B & 8b & 0.997 (1.00) & 0.992 (1.01) & --- & 0.986 (1.00) & 0.997 (1.00) \\
+Qwen3-0.6B & 4b & 0.862 (0.94) & 0.915 (0.96) & 0.929 (0.95) & 0.884 (0.97) & 0.897 (0.97) \\
+Qwen3-0.6B & 3b & 0.337 (0.81) & --- & 0.522 (0.84) & 0.628 (0.87) & 0.543 (0.90) \\
+Qwen3-0.6B & 2b & 0.000 (0.69) & 0.001 (0.69) & --- & 0.000 (0.70) & 0.002 (0.69) \\
+\midrule
+Qwen3-1.7B & 8b & 0.992 (1.00) & 1.001 (1.00) & --- & 1.001 (1.00) & 0.992 (1.00) \\
+Qwen3-1.7B & 4b & 0.855 (0.97) & 0.919 (0.99) & --- & 0.970 (1.00) & 0.934 (0.99) \\
+Qwen3-1.7B & 3b & 0.408 (0.81) & --- & --- & 0.790 (0.89) & 0.644 (0.91) \\
+Qwen3-1.7B & 2b & 0.000 (0.58) & 0.000 (0.59) & --- & 0.000 (0.62) & 0.004 (0.60) \\
+\midrule
+SmolLM3-3B & 8b & 0.999 (1.00) & \textbf{NaN} & --- & --- & --- \\
+SmolLM3-3B & 4b & 0.852 (0.98) & \textbf{NaN} & --- & --- & --- \\
+SmolLM3-3B & 3b & 0.091 (0.87) & --- & --- & --- & --- \\
+SmolLM3-3B & 2b & 0.000 (0.50) & \textbf{NaN} & --- & --- & --- \\
+\midrule
+Llama-3.2-3B & 8b & 0.999 (1.00) & \textbf{NaN} & --- & 0.994 (1.00) & --- \\
+Llama-3.2-3B & 4b & 0.932 (0.98) & \textbf{NaN} & --- & 0.955 (0.99) & --- \\
+Llama-3.2-3B & 3b & 0.639 (0.89) & --- & --- & 0.809 (0.94) & --- \\
+Llama-3.2-3B & 2b & 0.003 (0.54) & \textbf{NaN} & --- & 0.016 (0.67) & --- \\
+\midrule
+Qwen3-4B & 8b & 1.005 (1.00) & \textbf{NaN} & --- & 0.990 (1.00) & --- \\
+Qwen3-4B & 4b & 0.942 (0.97) & \textbf{NaN} & --- & 0.932 (0.97) & --- \\
+Qwen3-4B & 3b & 0.652 (0.87) & --- & --- & 0.807 (0.90) & --- \\
+Qwen3-4B & 2b & 0.001 (0.53) & \textbf{NaN} & --- & 0.170 (0.65) & --- \\
+\bottomrule
+\end{tabular}
+\end{table}

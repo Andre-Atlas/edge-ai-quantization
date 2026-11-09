@@ -1,0 +1,25 @@
+\begin{table}[htbp]
+\centering
+\caption{Desempenho de inferência e eficiência de conversão de banda de memória $E = G_{\text{dec}}/R_{\text{tam}}$ em 4 bits (Rodada 2 de referência, com máquina ociosa). Em todos os modelos de 3--4B, $E \ge 0{,}83 > 0{,}60$ (H4 corroborada).}
+\label{tab:velocidade_h4}
+\small
+\begin{tabular}{llrrrrrrr}
+\toprule
+Modelo & Método & Tam. (GB) & $R_{\text{tam}}$ & Prefill (tok/s) & Decode (tok/s) & $G_{\text{dec}}$ & Eficiência $E$ & Pico GPU (GB) \\
+\midrule
+Qwen3-0.6B & RTN & 0.35 & 3.47$\times$ & 14584 & 400.6 & 2.04$\times$ & \textbf{0.588} & 0.91 \\
+Qwen3-0.6B & GPTQ & 0.39 & 3.12$\times$ & 14140 & 390.2 & 1.99$\times$ & \textbf{0.637} & 0.95 \\
+Qwen3-0.6B & AWQ & 0.36 & 3.37$\times$ & 14394 & 395.7 & 2.02$\times$ & \textbf{0.598} & 0.91 \\
+Qwen3-0.6B & DWQ & 0.35 & 3.47$\times$ & 14410 & 399.0 & 2.03$\times$ & \textbf{0.586} & 0.91 \\
+Qwen3-1.7B & RTN & 0.98 & 3.52$\times$ & 6338 & 222.6 & 2.83$\times$ & \textbf{0.803} & 1.71 \\
+Qwen3-1.7B & GPTQ & 1.06 & 3.27$\times$ & 6276 & 211.0 & 2.68$\times$ & \textbf{0.821} & 1.80 \\
+Qwen3-1.7B & AWQ & 1.00 & 3.46$\times$ & 6323 & 220.8 & 2.81$\times$ & \textbf{0.812} & 1.74 \\
+Qwen3-1.7B & DWQ & 0.98 & 3.52$\times$ & 6316 & 223.5 & 2.84$\times$ & \textbf{0.807} & 1.71 \\
+SmolLM3-3B & RTN & 1.75 & 3.53$\times$ & 3077 & 132.6 & 2.93$\times$ & \textbf{0.829} & 2.48 \\
+Llama-3.2-3B & RTN & 1.82 & 3.53$\times$ & 3303 & 125.8 & 2.93$\times$ & \textbf{0.830} & 2.49 \\
+Llama-3.2-3B & AWQ & 1.85 & 3.48$\times$ & 3444 & 131.5 & 3.06$\times$ & \textbf{0.878} & 2.52 \\
+Qwen3-4B & RTN & 2.27 & 3.54$\times$ & 2538 & 104.4 & 3.09$\times$ & \textbf{0.872} & 2.99 \\
+Qwen3-4B & AWQ & 2.30 & 3.50$\times$ & 2467 & 103.5 & 3.06$\times$ & \textbf{0.874} & 3.02 \\
+\bottomrule
+\end{tabular}
+\end{table}
