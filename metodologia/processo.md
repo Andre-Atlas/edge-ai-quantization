@@ -91,15 +91,15 @@
   6. Repetir o tempo do `Qwen3-0.6B-fp` (8 h 53; hipótese de swap; protocolo-v2, 7 C).
   7. Desligar o agendamento `launchd` (`com.edgeai.etapa4`), que continua carregado e tenta disparar todo dia à meia-noite (um marcador impede a repetição).
 
-### Etapa 4b — 🟡 (extensão pré-registrada, protocolo v3)
-- **Feito (26/10–09/11):**
+### Etapa 4b — ✅ Bloco 1 concluído (extensão pré-registrada, protocolo v3)
+- **Feito (26/10–10/11):**
   - protocolo v3 (tag `protocolo-v3`);
   - código (GPTQ-fp32 com 3 bits, grade v3 com 52 jobs, `analise_v3.py`, testes `testes_v3.py` 25/25);
   - download dos 4 modelos novos (`Qwen2.5-0.5B`, `1.5B`, `3B` e `Llama-3.2-1B`);
   - validação de regressão 704/704 tensores e validação de sanidade 3 bits no `Qwen3-0,6B` concluídas ($\text{PPL}_{4\text{b}} = 22,58 < \text{PPL}_{3\text{b}} = 40,20 < \text{PPL}_{\text{RTN3}} = 62,26$);
-  - orquestrador `experimentos/rodar_bloco1_v3.sh` criado com trava obrigatória de tomada (`AC Power`) para rodar o `gptq_fp32` (4 e 3 bits) nos 5 modelos da v2 (D27).
-- **Falta (opcional, sob demanda):**
-  - Disparar `./experimentos/rodar_bloco1_v3.sh` conectado à tomada para completar os modelos restantes do Bloco 1 da v3 e regenerar `hipoteses-v3.json`.
+  - **Bloco 1 da v3 100% concluído em 10/11/2026 (`06:19`)** via `experimentos/rodar_bloco1_v3.sh`: todos os 10 jobs de `gptq_fp32` (4 e 3 bits nos 5 modelos da `v2`) executados e avaliados com **0 falhas e 0 `NaN`**, recuperando `SmolLM3-3B` ($Q = 0,9631$ a 4b; $0,8315$ a 3b) e `Qwen3-4B` ($Q = 0,9582$ a 4b; $0,8754$ a 3b) e tornando **conclusivos** os vereditos da `v3` para **H3 (Corroborada: 5/5 na 1ª metade e 4/5 na 2ª metade)** e **H2 (Refutada: 1/6 células monotônicas na família Qwen3)**, além de **H4 (Corroborada)** e **H1 (4/5 modelos $\ge 0,95$ na estimativa pontual; inconclusiva com $\sigma_{\text{cal}}$)**.
+- **Falta (opcional, sob demanda — Bloco 2):**
+  - Os 4 modelos adicionais da `matriz-v3.json` (`Qwen2.5-0.5B/1.5B/3B` e `Llama-3.2-1B`) permanecem como expansão opcional caso se deseje elevar o poder estatístico de H1 para $N = 9$ modelos.
 
 ### Etapa 5 — ✅ (fechada para a matriz v2)
 - Feito: `analise.py` com os critérios da v1 (22/10) e as regras da v2 (25/10), sensibilidade ao SmolLM3, testes sintéticos dos ramos; `analise_h3_nll.py` (análise secundária em NLL); e em 09/11 os diagnósticos secundários de **concordância entre perplexidade e acurácia zero-shot** (`concordancia_acuracia`: Pearson $r = 0,9520$, Spearman $\rho = 0,9413$ em $N = 50$ configurações válidas; coincidência do melhor método calibrado a 4 bits em 3 de 4 modelos) e **variância entre sementes de calibração do AWQ 4 bits** (`variancia_replicas_awq`: $\sigma_{\text{cal}}(Q) = 0,0065$, $\text{CV}_{\text{PPL}} = 0,65\text{--}0,75\%$). `resultados/hipoteses.json` final gravado.

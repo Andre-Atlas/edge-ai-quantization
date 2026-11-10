@@ -15,7 +15,7 @@ Repositório de pesquisa para um artigo científico sobre **Edge AI e quantizaç
 | O manuscrito científico completo, tabelas e figuras | [`artigo/manuscrito.md`](artigo/manuscrito.md) |
 | As 27 fichas de leitura estruturadas (Severino + Popper) | [`literatura/fichas/README.md`](literatura/fichas/README.md) |
 
-## Estado (09/11/2026)
+## Estado (10/11/2026)
 
 | Etapa | Estado |
 |---|---|
@@ -24,15 +24,16 @@ Repositório de pesquisa para um artigo científico sobre **Edge AI e quantizaç
 | 2. Pipeline robusto | ✅ (`testes.py` 8/8 e `testes_v3.py` 25/25) |
 | 3. llama.cpp (K-quants) | ✅ qualidade e velocidade dos 5 modelos |
 | 4. Matriz completa | ✅ execução concluída em 26/10 (59 válidos, 9 inválidos por NaN; velocidade medida em 2 rodadas) |
-| 4b. Extensão v3 | 🟡 pré-registrada (`protocolo-v3`); validação 704/704 e sanidade 3 bits concluídas no `Qwen3-0,6B`; script `rodar_bloco1_v3.sh` pronto com trava `AC Power` |
-| 5. Análise das hipóteses | ✅ fechada para a matriz v2 (`hipoteses.json`): H4 corroborada; H1–H3 inconclusivas; concordância $Q \times Q_{\text{acc}}$ ($r = 0,9520$) e variância $\sigma_{\text{cal}}(Q) = 0,0065$ |
-| 6. Painel (GitHub Pages) | ✅ atualizado em 09/11 com a matriz v2, K-quants e validação `gptq_fp32` |
+| 4b. Extensão v3 (Bloco 1) | ✅ Bloco 1 concluído em 10/11 (10/10 jobs `gptq_fp32` 4b e 3b nos 5 modelos da v2 com 0 `NaN`); Bloco 2 (4 modelos novos) opcional |
+| 5. Análise das hipóteses | ✅ fechada para `v2` (`hipoteses.json`: **H4 corroborada**) e para `v3` Bloco 1 (`hipoteses-v3.json`: **H3 corroborada**, **H2 refutada**, **H4 corroborada**, **H1 4/5 pontual / inconclusiva com $\sigma_{\text{cal}}$**) |
+| 6. Painel (GitHub Pages) | ✅ atualizado em 10/11 com a matriz v2, K-quants e os 10 jobs de `gptq_fp32` do Bloco 1 (`site/data/resultados.json`, 89 linhas) |
 | 7. Literatura e redação | ✅ 27 fichas de leitura (`literatura/fichas/`), 5 tabelas Markdown/LaTeX (`artigo/tabelas/`), 4 figuras SVG (`artigo/figuras/`) e manuscrito completo (`artigo/manuscrito.md`) |
 
 Achados principais:
-1. O GPTQ padrão do `mlx-lm 0.32.2` produz modelos inválidos (perplexidade `NaN`) em todos os modelos de 3–4B e larguras testadas, por arredondamento em `bfloat16` da Hessiana ($X^\top X$ perde semidefinição positiva nas camadas finais); corrigido em `gptq_fp32` (`--hessiana fp32`).
+1. O GPTQ padrão do `mlx-lm 0.32.2` produz modelos inválidos (perplexidade `NaN`) em todos os modelos de 3–4B e larguras testadas, por arredondamento em `bfloat16` da Hessiana ($X^\top X$ perde semidefinição positiva nas camadas finais); corrigido em `gptq_fp32` (`--hessiana fp32`), que completou os 10 jobs de 4 e 3 bits nos 5 modelos com **0 `NaN`** e elevou a retenção de 4 bits para $Q = 0,9631$ no `SmolLM3-3B` e $Q = 0,9582$ no `Qwen3-4B`.
 2. **H4 corroborada** nos modelos de 3–4B ($E = 0,83\text{--}0,87 \ge 0,60$, aceleração de decodificação de $2,95\times\text{--}3,08\times$ para redução de tamanho de $3,54\times$).
-3. Forte concordância entre retenção de perplexidade e retenção de acurácia zero-shot ($r = 0,9520$, $\rho = 0,9413$) e baixo ruído de semente de calibração no AWQ 4 bits ($\sigma_{\text{cal}}(Q) = 0,0065$).
+3. No protocolo pré-registrado `v3` (após conclusão do Bloco 1 nos 5 modelos): **H3 corroborada** (degradação superlinear em NLL em 5/5 modelos e redução de perda $\ge 20\%$ em 3 bits sobre o RTN em 4/5 modelos: $-32,5\%$ a $-56,1\%$) e **H2 refutada** (ordem monotônica estrita $0,6\text{B} < 1,7\text{B} < 4\text{B}$ em apenas 1 de 6 células da família `Qwen3`). Para **H1**, 4 de 5 modelos (80%) atingem $Q \ge 0,95$ na estimativa pontual a 4 bits, ficando formalmente `inconclusiva` quando o IC 95% é alargado por $\pm 1,96\,\sigma_{\text{cal}}$.
+4. Forte concordância entre retenção de perplexidade e retenção de acurácia zero-shot ($r = 0,9520$, $\rho = 0,9413$) e baixo ruído de semente de calibração no AWQ 4 bits ($\sigma_{\text{cal}}(Q) = 0,0065$).
 
 ## Estrutura
 

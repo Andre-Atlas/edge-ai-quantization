@@ -15,8 +15,8 @@
  },
  "hipoteses": {
   "H1": {
-   "veredito": "nao avaliavel (N insuficiente)",
-   "resumo": "{'sucesso': 1, 'contrario': 2, 'indeterminado': 1} de 4 avaliaveis",
+   "veredito": "inconclusiva",
+   "resumo": "{'sucesso': 2, 'contrario': 1, 'indeterminado': 2} de 5 avaliaveis",
    "evidencia": {
     "Qwen/Qwen3-0.6B": {
      "classe": "contrario",
@@ -75,6 +75,13 @@
         0.9328
        ]
       ],
+      "gptq_fp32": [
+       0.9173,
+       [
+        0.903,
+        0.9311
+       ]
+      ],
       "awq": [
        0.9702,
        [
@@ -91,7 +98,25 @@
       ]
      }
     },
-    "HuggingFaceTB/SmolLM3-3B": "nao avaliavel",
+    "HuggingFaceTB/SmolLM3-3B": {
+     "classe": "sucesso",
+     "rtn": [
+      0.8524,
+      [
+       0.8491,
+       0.8559
+      ]
+     ],
+     "cientes": {
+      "gptq_fp32": [
+       0.9631,
+       [
+        0.9502,
+        0.976
+       ]
+      ]
+     }
+    },
     "meta-llama/Llama-3.2-3B": {
      "classe": "indeterminado",
      "rtn": [
@@ -102,6 +127,13 @@
       ]
      ],
      "cientes": {
+      "gptq_fp32": [
+       0.1084,
+       [
+        0.0771,
+        0.1496
+       ]
+      ],
       "awq": [
        0.9554,
        [
@@ -112,7 +144,7 @@
      }
     },
     "Qwen/Qwen3-4B": {
-     "classe": "contrario",
+     "classe": "indeterminado",
      "rtn": [
       0.9418,
       [
@@ -121,6 +153,13 @@
       ]
      ],
      "cientes": {
+      "gptq_fp32": [
+       0.9582,
+       [
+        0.9451,
+        0.9713
+       ]
+      ],
       "awq": [
        0.9317,
        [
@@ -137,8 +176,8 @@
    }
   },
   "H2": {
-   "veredito": "nao avaliavel (celulas insuficientes)",
-   "resumo": "ordem confirmada em 1 de 4 celulas validas",
+   "veredito": "refutada",
+   "resumo": "ordem confirmada em 1 de 6 celulas validas",
    "evidencia": {
     "Qwen3-rtn-4b": {
      "Q": [
@@ -203,12 +242,44 @@
       0.0361
      ],
      "ordem_confirmada": false
+    },
+    "Qwen3-gptq_fp32-4b": {
+     "Q": [
+      0.9285,
+      0.9173,
+      0.9582
+     ],
+     "ic_medio_menos_pequeno": [
+      -0.0303,
+      0.0076
+     ],
+     "ic_grande_menos_medio": [
+      0.0218,
+      0.0602
+     ],
+     "ordem_confirmada": false
+    },
+    "Qwen3-gptq_fp32-3b": {
+     "Q": [
+      0.5216,
+      0.5435,
+      0.8754
+     ],
+     "ic_medio_menos_pequeno": [
+      -0.0009,
+      0.0443
+     ],
+     "ic_grande_menos_medio": [
+      0.3083,
+      0.3557
+     ],
+     "ordem_confirmada": false
     }
    }
   },
   "H3": {
-   "veredito": "nao avaliavel (N insuficiente)",
-   "resumo": "1a metade corroborada {'sim': 5, 'contrario': 0, 'indeterminado': 0} (N=5); 2a metade nao avaliavel (N insuficiente) {'sim': 2, 'contrario': 0, 'indeterminado': 0} (N=2)",
+   "veredito": "corroborada",
+   "resumo": "1a metade corroborada {'sim': 5, 'contrario': 0, 'indeterminado': 0} (N=5); 2a metade corroborada {'sim': 4, 'contrario': 1, 'indeterminado': 0} (N=5)",
    "evidencia": {
     "Qwen/Qwen3-0.6B": {
      "S_ic": [
@@ -241,21 +312,39 @@
       17.092,
       19.4565
      ],
-     "superlinear": "sim"
+     "superlinear": "sim",
+     "L3_razao_melhor_rtn": [
+      0.1704,
+      0.2007
+     ],
+     "melhor": "gptq_fp32",
+     "reduz_20pct": "sim"
     },
     "meta-llama/Llama-3.2-3B": {
      "S_ic": [
       5.0639,
       5.2161
      ],
-     "superlinear": "sim"
+     "superlinear": "sim",
+     "L3_razao_melhor_rtn": [
+      2.7,
+      2.8151
+     ],
+     "melhor": "gptq_fp32",
+     "reduz_20pct": "contrario"
     },
     "Qwen/Qwen3-4B": {
      "S_ic": [
       5.8982,
       6.0488
      ],
-     "superlinear": "sim"
+     "superlinear": "sim",
+     "L3_razao_melhor_rtn": [
+      0.3166,
+      0.4008
+     ],
+     "melhor": "gptq_fp32",
+     "reduz_20pct": "sim"
     },
     "Qwen/Qwen2.5-0.5B": "nao avaliavel",
     "Qwen/Qwen2.5-1.5B": "nao avaliavel",

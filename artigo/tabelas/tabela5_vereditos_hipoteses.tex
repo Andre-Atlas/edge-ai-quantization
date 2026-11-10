@@ -7,14 +7,14 @@
 \toprule
 Hipótese / Eixo & Critério & Evidência Obtida & Veredito \\
 \midrule
-H1 (Qualidade 4b) & $\ge 4/5$ com $Q_{\text{ciente}} \ge 0{,}95 > Q_{\text{RTN}}$ & 2/4 avaliáveis atingem $\ge 0{,}95$ (1,7B e Llama-3,2-3B) & Inconclusiva \\
-H2 (Porte Qwen3) & $Q_{0{,}6\text{B}} < Q_{1{,}7\text{B}} < Q_{4\text{B}}$ em $\ge 75\%$ & Confirmada em 1/2 células do RTN (3b sim; 4b empate 0,6B/1,7B) & Inconclusiva \\
-H3 (Primária $L$) & $\Delta L_{3\to 2} > \Delta L_{4\to 3}$ e redução $\ge 20\%$ & Saturação de $L \le 1$ aos 2 bits; só 2 modelos avaliáveis em 3b & Inconclusiva \\
-H3 (Escala NLL) & $\text{IC}_{95\%}(S) > 0$ em nats/token & Superlinear em 5/5 modelos ($S = 9.36$ nats/tok) & Superlinear (pós-hoc) \\
+H1 (Qualidade 4b) & $\ge 4/5$ com $Q_{\text{ciente}} \ge 0{,}95 > Q_{\text{RTN}}$ & Na v2: 2/4 avaliáveis. Na v3 (Bloco 1): 4/5 na estimativa pontual; 2 indeterminados com $\sigma_{\text{cal}}$ & Inconclusiva (v2/v3) \\
+H2 (Porte Qwen3) & $Q_{0{,}6\text{B}} < Q_{1{,}7\text{B}} < Q_{4\text{B}}$ em $\ge 75\%$ & Na v2: 1/2 células. Na v3 (Bloco 1): 1/6 células válidas ($16{,}7\% < 50\%$) & \textbf{Refutada (v3)} \\
+H3 (Primária $L$/NLL) & Superlinear em NLL e redução $\ge 20\%$ em 3b & Na v3 (Bloco 1): 1ª metade 5/5 ($100\%$); 2ª metade 4/5 ($80\% \ge 80\%$) & \textbf{Corroborada (v3)} \\
+H3 (Escala NLL) & $\text{IC}_{95\%}(S) > 0$ em nats/token & Superlinear em 5/5 modelos ($S = 9.36$ nats/tok) & Superlinear (5/5) \\
 H4 (Velocidade 4b) & $E \ge 0{,}60$ nos modelos de 3--4B & $E = 0{,}83$ (SmolLM3), $0{,}85$ (Llama), $0{,}87$ (Qwen3-4B) & \textbf{Corroborada} \\
 Concordância $Q \times Q_{\text{acc}}$ & Correlação em $N=50$ pares & $r = 0.952$, $\rho = 0.941$, melhor ciente 3/4 & Alta concordância \\
 Ruído de Calibração & 3 sementes AWQ 4b (0,6B e 1,7B) & $\sigma_{\text{cal}}(Q) = 0.0065$, $\text{CV}_{\text{PPL}} \le 0{,}75\%$ & Ruído $< 0{,}8\%$ \\
-GPTQ Hessiana bf16 & Autovalores de $H = X^\top X + \lambda I$ & 9/9 jobs 3--4B dão \texttt{NaN} em bf16; 0 falhas em fp32 & Bug numérico demonstrado \\
+GPTQ Hessiana bf16 & Autovalores de $H = X^\top X + \lambda I$ & 9/9 jobs 3--4B dão \texttt{NaN} em bf16; 10/10 válidos em fp32 & Corrigido (\texttt{gptq\_fp32}) \\
 \bottomrule
 \end{tabular}
 \end{table}
